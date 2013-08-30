@@ -15,40 +15,23 @@ function slugify(phrase) {
     .replace(/ /g,'-');
 }
 
-//Semaphore that we're adjusting the location, so that we don't fall into an
-//endless loop of reacting to our own updates
-var changingLocation = false;
-
 function changeLocation(path) {
-  //Set the semaphore so this change won't be read
-  changingLocation = true;
-
   //Set the URL fragment (location.hash) to the one we just constructed.
   location.hash = '#/'+path;
 }
 
 // Do hashslash location.
 function updateFromHash() {
-
-  //If we have just set the hash ourselves
-  if(changingLocation){
-
-    //Go back to listening for the next situation where the hash changes
-    changingLocation = false;
-
-  //If the hash has changed by external forces
+  //If the URL has a hash component and the second character is '/'
+  //(a hashslash, so we distinguish from in-page anchoring)
+  if (location.hash && location.hash.substr(1,1) == '/'){
+    beginPhrase(slugify(decodeURIComponent(location.hash.substr(2))));
+    
+  //If the URL has no hash component, or it has some meaningless
+  //non-hashslash value
   } else {
 
-    //If the URL has a hash component and the second character is '/'
-    //(a hashslash, so we distinguish from in-page anchoring)
-    if (location.hash && location.hash.substr(1,1) == '/'){
-      
-    //If the URL has no hash component, or it has some meaningless
-    //non-hashslash value
-    } else {
-
-      //Reset to the initial state
-    }
+    //Reset to the initial state
   }
 }
 
@@ -96,6 +79,7 @@ function startRinging(phrase,stream){
 
 function beginPhrase(phrase) {
   getUserMedia({audio:true,video:true},function(err){
+    //handle error: if permission denied,
     //tell the user they need to approve media capture to use chatphrase
   },function(stream){
     attachMediaStream(document.getElementById('pip'),stream);
@@ -103,4 +87,9 @@ function beginPhrase(phrase) {
   });
   
   //switch to limbo until media is successfully gotten
+}
+
+//Cheap submission function.
+function goToPhrase(phrase) {
+  changeLocation(slugify(phrase));
 }

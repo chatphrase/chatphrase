@@ -18,6 +18,7 @@ html
   body
     #landing.page.active
       input#phrase(type='text')
+      button(onclick="goToPhrase(document.getElementById('phrase').value)")
     #limbo.page.inactive
     #room.page.inactive
       #waiting
