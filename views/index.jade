@@ -17,8 +17,9 @@ html
     script(src='/chatphrase.js')
   body
     #landing.page.active
-      input#phrase(type='text')
-      button(onclick="goToPhrase(document.getElementById('phrase').value)")
+      form(onsubmit="goToPhrase(document.getElementById('phrase').value)")
+        input#phrase(type='text')
+        button(type="submit") Go
     #limbo.page.inactive
     #room.page.inactive
       #waiting

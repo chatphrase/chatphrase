@@ -29,7 +29,7 @@ module.exports = function appctor(cfg) {
   
   app.use(express.static(__dirname+'/static'));
   
-  app.get('/', function(req,res) {
+  app.get('/test', function(req,res) {
     res.render('index.jade');
   });
   
@@ -98,9 +98,9 @@ module.exports = function appctor(cfg) {
       if (err) return next(err);
       if (waiting_session) {
         //send a message to calls ringing on this line
-        db.publish(waiting_session,req.params.session);
+        db.publish(waiting_session,req.body.session);
         //set an "answer" record (with a short-ish TTL, for bogus answers)
-        db.setex('answered/'+waiting_session,req.params.session,
+        db.setex('answered/'+waiting_session,req.body.session,
           POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
         //clear the waiting record
         db.del('waiting/'+req.parms.slug);
