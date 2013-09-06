@@ -152,7 +152,7 @@ function startRinging(phrase,stream){
           peercon.setLocalDescription(desc);
 
           //Send this request to the other end
-          return f(phrase,JSON.stringify({ "session": desc.sdp }),peercon);
+          return f(phrase,JSON.stringify(desc),peercon);
         };
       }
 
@@ -165,6 +165,8 @@ function startRinging(phrase,stream){
         peercon.onicecandidate = icePoster(phrase,
           resbody.waiting ? 'answerer' : 'waiter');
         if (resbody.waiting) {
+          addIce(resbody.ice);
+          
           //add the remote session to the connection
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.waiting));

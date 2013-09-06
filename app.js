@@ -16,11 +16,18 @@ module.exports = function appctor(cfg) {
     {no_ready_check: true});
   dbSubscriber.auth(cfg.redis.password);
 
-  var dbSetex = db.setex.bind(db);
-  var dbSubscribe = dbSubscriber.subscribe.bind(dbSubscriber);
-  var dbUnsubscribe = dbSubscriber.unsubscribe.bind(dbSubscriber);
-
   var subscriptionCbs = Object.create(null);
+  
+  function subscribe(channel, listener, cb) {
+    subscriptionCbs[channel] = listener;
+    dbSubscriber.subscribe(channel,cb);
+  }
+  
+  function unsubscribe(channel, cb) {
+    dbSubscriber.unsubscribe(channel,cb);
+    delete subscriptionCbs[channel];
+  }
+  
   dbSubscriber.on("message",function(channel,message){
     if(subscriptionCbs[channel]) { //if not, I don't know, some problem
       subscriptionCbs[channel](message);
@@ -63,16 +70,13 @@ module.exports = function appctor(cfg) {
   //Polling endpoint to offer a connection,
   //and to see if somebody has answered
   app.post('/api/ring/:slug', function(req, res, next){
-    function clearSubscription(cb) {
-      dbUnsubscribe(req.body.session,cb);
-      delete subscriptionCbs[req.body.session];
-    }
+    var channel = 'waiter/' + req.params.slug;
 
     var timer = setTimeout(function(){
 
       // stop listening for answers
       //(until the next poll when we'll listen again)
-      clearSubscription(function(err) {
+      unsubscribe(channel,function(err) {
         if (err) return next(err);
         res.send({status:'waiting'});
       });
@@ -89,12 +93,12 @@ module.exports = function appctor(cfg) {
         if (err) return next(err);
 
         // stop listening for answers
-        clearSubscription(function(err) {
+        unsubscribe(channel,function(err) {
           if (err) return next(err);
 
-          //respond to the request,
+          //respond to the request
           res.send({answer: reply,
-            ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
+            ice: ice ? ice.map(JSON.parse) : ice});
         });
 
         //no need to clear the answered record or ICE data,
@@ -103,28 +107,24 @@ module.exports = function appctor(cfg) {
     }
 
     //check for an answer record (if the answer came between subscriptions)
-    db.get('answered/' + req.body.session, function(err, reply) {
+    db.get('answered/' + req.params.slug, function(err, reply) {
       if (err) return next(err);
       if (reply) {
         answer(reply);
       } else { //if no answer record
-
-        //subscribe to messages for this line
-        subscriptionCbs[req.body.session] = answer;
-
         var multi = db.multi()
         //set a waiting record for any call that comes in before this request
         //is answered
         .setex('waiting/'+req.params.slug,
           POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
-          req.body.session)
+          JSON.stringify(req.body))
         //Refresh the ICE data to expire concurrent with the waiting record
         .expire('ice/waiter/'+req.params.slug,
           POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
         
         queue()
         .defer(multi.exec.bind(multi))
-        .defer(dbSubscribe,req.body.session)
+        .defer(subscribe,channel,answer)
         .await(function(err){
           if (err) {
             //let's go ahead and clean up in the error case
@@ -148,11 +148,11 @@ module.exports = function appctor(cfg) {
       if (reply[0]) {
         db.multi()
           //send a message to calls ringing on this line
-          .publish(reply[0],req.body.session)
+          .publish(req.params.slug,JSON.stringify(req.body))
           //set an "answer" record (with a short-ish TTL, for bogus answers)
-          .setex('answered/'+reply[0],
+          .setex('answered/'+req.params.slug,
             POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
-            req.body.session)
+            JSON.stringify(req.body))
           //Refresh the ICE data to expire concurrent with the answer
           .expire('ice/answerer/'+req.params.slug,
             POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
@@ -181,6 +181,8 @@ module.exports = function appctor(cfg) {
         JSON.stringify(req.body.ic))
       .expire('ice/'+req.body.party+'/'+req.params.slug,
         POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
+      //TODO: if answerer, experiment with publishing to 'waiter/'+slug with
+      //null at this point, see if nothing breaks
       .exec(function(err){
         if(err) return next(err);
         res.send({status:'noted'});
