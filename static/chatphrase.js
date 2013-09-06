@@ -174,12 +174,13 @@ function startRinging(phrase,stream){
         peercon.onicecandidate = icePoster(phrase,
           resbody.waiting ? 'answerer' : 'waiter');
         if (resbody.waiting) {
-          addIce(peercon,resbody.ice);
           
           //add the remote session to the connection
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.waiting),
             null, consoleError);
+
+          addIce(peercon,resbody.ice);
 
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
