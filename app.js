@@ -29,13 +29,13 @@ module.exports = function appctor(cfg) {
   
   app.use(require('nowww')());
   
+  app.use(express.json());
+
   app.use(express.static(__dirname+'/static'));
   
   app.get('/test', function(req,res) {
     res.render('index.jade');
   });
-
-  app.use(express.json())
 
   //Initial endpoint to check if there is an offer
   //waiting on the line
