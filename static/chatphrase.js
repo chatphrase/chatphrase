@@ -31,6 +31,8 @@ function switchState(stateName) {
 
 //TODO: general XHR function, with timeout CB
 
+var consoleError = console.error.bind(console);
+
 function pollRing(phrase,body,peercon){
   var pollRq = new XMLHttpRequest();
    pollRq.onreadystatechange = function () {
@@ -46,7 +48,8 @@ function pollRing(phrase,body,peercon){
         if (resbody.answer) {
           // connect to the answer
           peercon.setRemoteDescription(
-            new RTCSessionDescription(resbody.answer));
+            new RTCSessionDescription(resbody.answer),
+            null,consoleError);
         } else {
           // Keep ringing
           return pollRing(phrase, body, peercon);
@@ -124,7 +127,8 @@ function icePoster(phrase, party) {
 function addIce(peercon, ice){
   if (ice) {
     for (var i=0; i < ice.length; i++){
-      peercon.addIceCandidate(new RTCIceCandidate(ice[i]));
+      peercon.addIceCandidate(new RTCIceCandidate(ice[i]),
+        null, consoleError);
     }
   }
 }
@@ -152,7 +156,7 @@ function startRinging(phrase,stream){
 
           //I'm not completely sure I understand this line (we add the session
           //we just made as a "local description"? Uh... duh?)
-          peercon.setLocalDescription(desc);
+          peercon.setLocalDescription(desc, null, consoleError);
 
           //Send this request to the other end
           return f(phrase,JSON.stringify(desc),peercon);
@@ -172,11 +176,13 @@ function startRinging(phrase,stream){
           
           //add the remote session to the connection
           peercon.setRemoteDescription(
-            new RTCSessionDescription(resbody.waiting));
+            new RTCSessionDescription(resbody.waiting),
+            null, consoleError);
 
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
-          peercon.createOffer(ringFromDesc(pollRing), null,
+          peercon.createOffer(ringFromDesc(pollRing),
+            null, consoleError,
             {'mandatory': {
               'OfferToReceiveAudio': true,
               'OfferToReceiveVideo': true }});
