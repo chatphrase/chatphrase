@@ -1,28 +1,17 @@
-!!!
-html
-  head
-    meta(charset="utf-8")
-    title Chatphrase
-    style.
-      html, body, .page {
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      .inactive {
-        display: none;
-      }
-    script(src='/adapter.js')
-  body
-    #landing.page.active
-      form(onsubmit="goToPhrase(document.getElementById('phrase').value);return false;")
-        input#phrase(type='text')
-        button(type="submit") Go
-    #limbo.page.inactive
-      #virgil
-    #room.page.inactive
-      #waiting
-      video(autoplay)#vidscreen
-      video(autoplay,muted)#pip
-    script(src='/chatphrase.js')
+extends base
+
+append scripts
+  script(src='/adapter.js')
+
+block body
+  #landing.page.active
+    form(onsubmit="goToPhrase(document.getElementById('phrase').value);return false;")
+      input#phrase(type='text')
+      button(type="submit") Go
+  #limbo.page.inactive
+    #virgil
+  #room.page.inactive
+    #waiting
+    video(autoplay)#vidscreen
+    video(autoplay,muted)#pip
+  script(src='/chatphrase.js')
