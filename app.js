@@ -47,14 +47,17 @@ module.exports = function appctor(cfg) {
   //waiting on the line
   app.get('/api/ring/:slug', function(req,res,next){
     //get the state of this phrase from the database
-    db.get('waiting/'+req.params.slug,function(err,reply){
-      if(err) return next(err);
-      if(reply) {
-        return res.send({waiting:reply});
-      } else {
-        return res.send({status:'ready'});
-      }
-    });
+    db.multi()
+      .get('waiting/'+req.params.slug)
+      .lrange('ice/waiter/'+req.params.slug, 0, -1)
+      .exec(function(err,reply){
+        if(err) return next(err);
+        if(reply[0]) {
+          return res.send({waiting:reply, ice:reply[1]});
+        } else {
+          return res.send({status:'ready'});
+        }
+      });
   });
 
   //Polling endpoint to offer a connection,
@@ -66,71 +69,113 @@ module.exports = function appctor(cfg) {
     }
 
     var timer = setTimeout(function(){
-      res.send({status:'waiting'});
-      clearSubscription();
-    },POLL_WAIT_SECONDS*1000);
+
+      // stop listening for answers
+      //(until the next poll when we'll listen again)
+      clearSubscription(function(err) {
+        if (err) return next(err);
+        res.send({status:'waiting'});
+      });
+    }, POLL_WAIT_SECONDS * 1000);
 
 
     //if a message is recieved before the time is up,
     function answer(reply){
-      //respond to the request,
-      res.send({answer:reply});
-      //cancel the timeout,
-      clearTimeout(timer);
-      //and stop listening for answers
-      clearSubscription();
-      //no need to clear the answered record, we'll let the TTL handle that
+      db.lrange('ice/answerer/'+req.params.slug, 0, -1,
+      function(err,ice) {
+        //cancel the timeout
+        clearTimeout(timer);
+
+        if (err) return next(err);
+
+        // stop listening for answers
+        clearSubscription(function(err) {
+          if (err) return next(err);
+
+          //respond to the request,
+          res.send({answer:reply, ice: ice});
+        });
+
+        //no need to clear the answered record or ICE data,
+        //we'll let the TTL handle that
+      });
     }
 
     //check for an answer record (if the answer came between subscriptions)
-    db.get('answered/'+req.body.session,function(err,reply){
-      if (err) return next(err);
-      if (reply) {
-        answer(reply);
-      } else { //if no answer record
+    db.get('answered/' + req.body.session, function(err, reply) {
+        if (err) return next(err);
+        if (reply) {
+          answer(reply);
+        } else { //if no answer record
 
-        //subscribe to messages for this line
-        subscriptionCbs[req.body.session] = answer;
+          //subscribe to messages for this line
+          subscriptionCbs[req.body.session] = answer;
 
-        //set a waiting record for any call that comes in before this request
-        //is answered
-        queue()
-        .defer(dbSetex,'waiting/'+req.params.slug,
-          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
-          req.body.session)
-        .defer(dbSubscribe,req.body.session)
-        .await(function(err){
-          if (err) {
-            //let's go ahead and clean up in the error case
-            clearTimeout(timer);
-            return next(err);
-          }
-        });
+          //set a waiting record for any call that comes in before this request
+          //is answered
+          queue()
+          .defer(dbSetex,'waiting/'+req.params.slug,
+            POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
+            req.body.session)
+          .defer(dbSubscribe,req.body.session)
+          .await(function(err){
+            if (err) {
+              //let's go ahead and clean up in the error case
+              clearTimeout(timer);
+              return next(err);
+            }
+          });
       }
     });
   });
 
   //Endpoint to answer a waiting call
   app.post('/api/answer/:slug', function(req, res, next) {
-    //NOTE: This is maybe a bit more labyrinthine than it should be
-    db.get('waiting/'+req.parms.slug,function(err, waiting_session) {
+    db.multi()
+      .get('waiting/'+req.parms.slug)
+      .lrange('ice/waiter/'+req.params.slug,0,-1)
+      .exec(handleDBResponse);
+
+    function handleDBResponse(err, reply) {
       if (err) return next(err);
-      if (waiting_session) {
-        //send a message to calls ringing on this line
-        db.publish(waiting_session,req.body.session);
-        //set an "answer" record (with a short-ish TTL, for bogus answers)
-        db.setex('answered/'+waiting_session,req.body.session,
-          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
-        //clear the waiting record
-        db.del('waiting/'+req.parms.slug);
-        res.send({status:'answered'});
+      if (reply[0]) {
+        db.multi()
+          //send a message to calls ringing on this line
+          .publish(reply[0],req.body.session)
+          //set an "answer" record (with a short-ish TTL, for bogus answers)
+          .setex('answered/'+reply[0],
+            POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
+            req.body.session)
+          //Refresh the ICE data to expire concurrent with the answer
+          .expire('ice/answerer/'+req.params.slug,
+            POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
+          //clear the waiting record and ICE data
+          .del('waiting/'+req.parms.slug)
+          .del('ice/waiter/'+req.parms.slug)
+          .exec(function(err){
+            if (err) return next(err);
+            res.send({status:'answered', ice: reply[1]});
+          });
       }
       //if there was no waiting record (say, perhaps, somebody already
       //answered and cleared it)
       else {
         res.send({status:'absent'});
       }
-    });
+    }
+  });
+
+  //Endpoint to add ICE data
+  app.post('/api/ice/:slug', function(req, res, next) {
+    //NOTE: This is maybe a bit more labyrinthine than it should be
+    db.multi()
+      .rpush('ice/'+req.body.party+'/'+req.params.slug, req.body.ic)
+      .expire('ice/'+req.body.party+'/'+req.params.slug,
+        POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
+      .exec(function(err){
+        if(err) return next(err);
+        res.send({status:'noted'});
+      });
   });
 
   return app;

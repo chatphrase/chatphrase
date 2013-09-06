@@ -43,6 +43,11 @@ function pollRing(phrase,body,peercon){
         // parse response
         var resbody = JSON.parse(pollRq.responseText);
 
+        //the request could theoretically come back as soon as
+        //some ICE candidates have been posted, if the server logic
+        //has been changed to work that way
+        addIce(resbody.ice);
+
         if (resbody.answer) {
           // connect to the answer
           peercon.setRemoteDescription(
@@ -73,9 +78,12 @@ function answerRing(phrase,body,peercon){
         var resbody = JSON.parse(answerRq.responseText);
 
         if(resbody.status == "answered") {
+          addIce(resbody.ice);
           //inform the user that they're waiting for the other end
           //to connect (if they haven't already)
-          //TODO: continue polling for ICE negotiation
+          //TODO: continue polling for ICE until connected?
+          //(final polls can terminate when the other end
+          //acknowledges it's connected)
         } else {
           //go back to the beginning
           //TODO: destroy existing peer connection?
@@ -93,6 +101,32 @@ function onRemoteStreamConnected(evt){
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
 
   //Do other "on remote client connected" stuff
+}
+
+// Constructs a function that posts ICE candidates.
+function icePoster(phrase, party) {
+  return function(evt) {
+    var iceRq = new XMLHttpRequest();
+     iceRq.onreadystatechange = function () {
+        if (iceRq.readyState == 4) {
+          //parse response
+          console.log(evt.candidate,iceRq.responseText);
+        }
+      };
+    iceRq.open("POST","/api/answer/"+phrase);
+    iceRq.setRequestHeader(
+      "Content-type", "application/json; charset=utf-8");
+    iceRq.send(JSON.stringify({party: party, ic: evt.candidate}));
+  };
+}
+
+//Function to handle incoming ICE candidates.
+function addIce(peercon, ice){
+  if (ice) {
+    for (var i=0; i < ice.length; i++){
+      peercon.addIceCandidate(new RTCIceCandidate(ice[i]));
+    }
+  }
 }
 
 function startRinging(phrase,stream){
@@ -128,6 +162,8 @@ function startRinging(phrase,stream){
 
         //NOTE: Maybe we should hold off on creating the session offers
         //until there's two endpoints on the line
+        peercon.onicecandidate = icePoster(phrase,
+          resbody.waiting ? 'answerer' : 'waiter');
         if (resbody.waiting) {
           //add the remote session to the connection
           peercon.setRemoteDescription(
