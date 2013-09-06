@@ -142,14 +142,19 @@ function startRinging(phrase,stream){
 }
 
 function beginPhrase(phrase) {
-  getUserMedia({audio:true,video:true},function(err){
-    //handle error: if permission denied,
-    //tell the user they need to approve media capture to use chatphrase
-  },function(stream){
+  getUserMedia({audio:true,video:true},function(stream){
     attachMediaStream(document.getElementById('pip'),stream);
     //advance to lobby / connection
     startRinging(phrase,stream);
     switchState("room");
+  },function(err){
+    if(err.code == err.PERMISSION_DENIED){
+      document.getElementById('virgil').textContent =
+        "It looks like we've been denied permission to access your camera. "+
+        "We need access to your camera to start the call (it wouldn't be "+
+        "much of a video call if we didn't). Please reset permissions for "+
+        "camera access on chatphrase.com and refresh the page.";
+    }
   });
   
   //switch to limbo until media is successfully gotten
