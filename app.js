@@ -132,7 +132,7 @@ module.exports = function appctor(cfg) {
   //Endpoint to answer a waiting call
   app.post('/api/answer/:slug', function(req, res, next) {
     db.multi()
-      .get('waiting/'+req.parms.slug)
+      .get('waiting/'+req.params.slug)
       .lrange('ice/waiter/'+req.params.slug,0,-1)
       .exec(handleDBResponse);
 
@@ -150,8 +150,8 @@ module.exports = function appctor(cfg) {
           .expire('ice/answerer/'+req.params.slug,
             POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
           //clear the waiting record and ICE data
-          .del('waiting/'+req.parms.slug)
-          .del('ice/waiter/'+req.parms.slug)
+          .del('waiting/'+req.params.slug)
+          .del('ice/waiter/'+req.params.slug)
           .exec(function(err){
             if (err) return next(err);
             res.send({status:'answered', ice: reply[1]});
