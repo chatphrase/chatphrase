@@ -49,14 +49,14 @@ function pollRing(phrase,body,peercon){
             new RTCSessionDescription(resbody.answer));
         } else {
           // Keep ringing
-          return pollRing(phrase, body);
+          return pollRing(phrase, body, peercon);
         }
       }
     };
   pollRq.open("POST","/api/ring/"+phrase);
   pollRq.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
-  pollRq.send();  
+  pollRq.send(body);  
 }
 
 function answerRing(phrase,body,peercon){
@@ -86,7 +86,7 @@ function answerRing(phrase,body,peercon){
   answerRq.open("POST","/api/answer/"+phrase);
   answerRq.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
-  answerRq.send();
+  answerRq.send(body);
 }
 
 function onRemoteStreamConnected(evt){
