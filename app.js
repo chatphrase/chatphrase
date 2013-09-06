@@ -59,7 +59,7 @@ module.exports = function appctor(cfg) {
       .exec(function(err,reply){
         if(err) return next(err);
         if(reply[0]) {
-          return res.send({waiting: reply[0],
+          return res.send({waiting: JSON.parse(reply[0]),
             ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
         } else {
           return res.send({status:'ready'});
@@ -97,7 +97,7 @@ module.exports = function appctor(cfg) {
           if (err) return next(err);
 
           //respond to the request
-          res.send({answer: reply,
+          res.send({answer: JSON.parse(reply),
             ice: ice ? ice.map(JSON.parse) : ice});
         });
 
