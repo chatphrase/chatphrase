@@ -168,7 +168,8 @@ function goToPhrase(phrase) {
 function updateFromHash() {
   //If the URL has a hash component and the second character is '/'
   //(a hashslash, so we distinguish from in-page anchoring)
-  if (location.hash && location.hash.substr(1,1) == '/'){
+  if (location.hash && location.hash.substr(1,1) == '/'
+    && location.hash.length > 2){
     beginPhrase(slugify(decodeURIComponent(location.hash.substr(2))));
     
   //If the URL has no hash component, or it has some meaningless
