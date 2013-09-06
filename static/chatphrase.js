@@ -29,11 +29,6 @@ function switchState(stateName) {
   newactive.classList.add('active');
 }
 
-function changeLocation(path) {
-  //Set the URL fragment (location.hash) to the one we just constructed.
-  location.hash = '#/'+path;
-}
-
 //TODO: general XHR function, with timeout CB
 
 function pollRing(phrase,body,peercon){
@@ -187,6 +182,7 @@ function startRinging(phrase,stream){
 }
 
 function beginPhrase(phrase) {
+  document.title = phrase.replace(/-/g,' ') + ' : Chatphrase';
   getUserMedia({audio:true,video:true},function(stream){
     attachMediaStream(document.getElementById('pip'),stream);
     //advance to lobby / connection
@@ -208,7 +204,7 @@ function beginPhrase(phrase) {
 
 //Cheap submission function.
 function goToPhrase(phrase) {
-  changeLocation(slugify(phrase));
+  location.hash = '#/'+ slugify(phrase);
 }
 
 // Phrase submit event listener is specified in the Jade for the page itself
@@ -225,6 +221,7 @@ function updateFromHash() {
   //non-hashslash value
   } else {
     //Reset to the initial state
+    document.title = 'Chatphrase';
     document.getElementById("phrase").value = "";
     switchState("landing");
   }
