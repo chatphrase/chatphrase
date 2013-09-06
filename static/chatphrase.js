@@ -113,7 +113,7 @@ function icePoster(phrase, party) {
           console.log(evt.candidate,iceRq.responseText);
         }
       };
-    iceRq.open("POST","/api/answer/"+phrase);
+    iceRq.open("POST","/api/ice/"+phrase);
     iceRq.setRequestHeader(
       "Content-type", "application/json; charset=utf-8");
     iceRq.send(JSON.stringify({party: party, ic: evt.candidate}));
