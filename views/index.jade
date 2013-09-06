@@ -16,7 +16,7 @@ html
     script(src='/adapter.js')
   body
     #landing.page.active
-      form(onsubmit="goToPhrase(document.getElementById('phrase').value)")
+      form(onsubmit="goToPhrase(document.getElementById('phrase').value);return false;")
         input#phrase(type='text')
         button(type="submit") Go
     #limbo.page.inactive
