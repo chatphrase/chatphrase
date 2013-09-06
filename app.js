@@ -20,7 +20,6 @@ module.exports = function appctor(cfg) {
   var dbSubscribe = dbSubscriber.subscribe.bind(dbSubscriber);
   var dbUnsubscribe = dbSubscriber.unsubscribe.bind(dbSubscriber);
 
-
   var subscriptionCbs = Object.create(null);
   dbSubscriber.on("message",function(channel,message){
     if(subscriptionCbs[channel]) { //if not, I don't know, some problem
@@ -53,7 +52,7 @@ module.exports = function appctor(cfg) {
       .exec(function(err,reply){
         if(err) return next(err);
         if(reply[0]) {
-          return res.send({waiting:reply,
+          return res.send({waiting: reply[0],
             ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
         } else {
           return res.send({status:'ready'});
@@ -105,28 +104,34 @@ module.exports = function appctor(cfg) {
 
     //check for an answer record (if the answer came between subscriptions)
     db.get('answered/' + req.body.session, function(err, reply) {
-        if (err) return next(err);
-        if (reply) {
-          answer(reply);
-        } else { //if no answer record
+      if (err) return next(err);
+      if (reply) {
+        answer(reply);
+      } else { //if no answer record
 
-          //subscribe to messages for this line
-          subscriptionCbs[req.body.session] = answer;
+        //subscribe to messages for this line
+        subscriptionCbs[req.body.session] = answer;
 
-          //set a waiting record for any call that comes in before this request
-          //is answered
-          queue()
-          .defer(dbSetex,'waiting/'+req.params.slug,
-            POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
-            req.body.session)
-          .defer(dbSubscribe,req.body.session)
-          .await(function(err){
-            if (err) {
-              //let's go ahead and clean up in the error case
-              clearTimeout(timer);
-              return next(err);
-            }
-          });
+        var multi = db.multi()
+        //set a waiting record for any call that comes in before this request
+        //is answered
+        .setex('waiting/'+req.params.slug,
+          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
+          req.body.session)
+        //Refresh the ICE data to expire concurrent with the waiting record
+        .expire('ice/waiter/'+req.params.slug,
+          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
+        
+        queue()
+        .defer(multi.exec.bind(multi))
+        .defer(dbSubscribe,req.body.session)
+        .await(function(err){
+          if (err) {
+            //let's go ahead and clean up in the error case
+            clearTimeout(timer);
+            return next(err);
+          }
+        });
       }
     });
   });
