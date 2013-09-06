@@ -89,7 +89,13 @@ module.exports = function appctor(cfg) {
           
         //subscribe to messages for this line
         subscriptionCbs[req.body.session] = answer;
-        dbSubscriber.subscribe(req.body.session);
+        dbSubscriber.subscribe(req.body.session, function(err){
+          if (err) {
+            //let's go ahead and clean up in the error case
+            clearTimeout(timer);
+            return next(err);
+          }
+        });
       }
     });
   });
