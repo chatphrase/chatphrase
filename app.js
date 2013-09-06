@@ -1,5 +1,6 @@
 var express = require('express');
 var redis = require('redis');
+var queue = require("queue-async");
 
 //While these should be properly configurable, I've yet to figure out
 //how I want to do it, so...
@@ -14,6 +15,11 @@ module.exports = function appctor(cfg) {
   var dbSubscriber = redis.createClient(cfg.redis.port, cfg.redis.hostname,
     {no_ready_check: true});
   dbSubscriber.auth(cfg.redis.password);
+  
+  var dbSetex = db.setex.bind(db);
+  var dbSubscribe = dbSubscriber.subscribe.bind(dbSubscriber);
+  var dbUnsubscribe = dbSubscriber.unsubscribe.bind(dbSubscriber);
+  
   
   var subscriptionCbs = Object.create(null);
   dbSubscriber.on("message",function(channel,message){
@@ -55,7 +61,7 @@ module.exports = function appctor(cfg) {
   //and to see if somebody has answered
   app.post('/api/ring/:slug', function(req, res, next){
     function clearSubscription() {
-      dbSubscriber.unsubscribe(req.body.session);
+      dbUnsubscribe(req.body.session);
       delete subscriptionCbs[req.body.session];
     }
     
@@ -82,14 +88,17 @@ module.exports = function appctor(cfg) {
       if (reply) {
         answer(reply);
       } else { //if no answer record
-        //set a waiting record for any call that comes in before this request
-        //is answered
-        db.setex('waiting/'+req.params.slug,req.body.session,
-          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
-          
+      
         //subscribe to messages for this line
         subscriptionCbs[req.body.session] = answer;
-        dbSubscriber.subscribe(req.body.session, function(err){
+        
+        //set a waiting record for any call that comes in before this request
+        //is answered
+        queue()
+        .defer(dbSetex,'waiting/'+req.params.slug,req.body.session,
+          POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
+        .defer(dbSubscribe,req.body.session)
+        .await(function(err){
           if (err) {
             //let's go ahead and clean up in the error case
             clearTimeout(timer);
