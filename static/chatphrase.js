@@ -43,7 +43,7 @@ function pollRing(phrase,body,peercon){
         //the request could theoretically come back as soon as
         //some ICE candidates have been posted, if the server logic
         //has been changed to work that way
-        addIce(resbody.ice);
+        addIce(peercon,resbody.ice);
 
         if (resbody.answer) {
           // connect to the answer
@@ -76,7 +76,7 @@ function answerRing(phrase,body,peercon){
         var resbody = JSON.parse(answerRq.responseText);
 
         if(resbody.status == "answered") {
-          addIce(resbody.ice);
+          addIce(peercon,resbody.ice);
           //inform the user that they're waiting for the other end
           //to connect (if they haven't already)
           //TODO: continue polling for ICE until connected?
@@ -172,7 +172,7 @@ function startRinging(phrase,stream){
         peercon.onicecandidate = icePoster(phrase,
           resbody.waiting ? 'answerer' : 'waiter');
         if (resbody.waiting) {
-          addIce(resbody.ice);
+          addIce(peercon,resbody.ice);
           
           //add the remote session to the connection
           peercon.setRemoteDescription(
