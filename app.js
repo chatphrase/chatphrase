@@ -186,8 +186,6 @@ module.exports = function appctor(cfg) {
         JSON.stringify(req.body.ic))
       .expire('ice/'+req.body.party+'/'+req.params.slug,
         POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
-      //TODO: if answerer, experiment with publishing to 'waiter/'+slug with
-      //null at this point, see if nothing breaks
       .exec(function(err){
         if(err) return next(err);
         res.send({status:'noted'});

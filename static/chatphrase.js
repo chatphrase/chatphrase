@@ -40,16 +40,13 @@ function pollRing(phrase,body,peercon){
         // parse response
         var resbody = JSON.parse(pollRq.responseText);
 
-        //the request could theoretically come back as soon as
-        //some ICE candidates have been posted, if the server logic
-        //has been changed to work that way
-        addIce(peercon,resbody.ice);
-
         if (resbody.answer) {
           // connect to the answer
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.answer),
             null,consoleError);
+          
+          addIce(peercon,resbody.ice);
         } else {
           // Keep ringing
           return pollRing(phrase, body, peercon);
