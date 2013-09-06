@@ -2,7 +2,7 @@
 /*global RTCPeerConnection getUserMedia attachMediaStream
   reattachMediaStream webrtcDetectedBrowser webrtcDetectedVersion
   RTCSessionDescription RTCIceCandidate*/
-  
+
 "use strict";
 
 // Create lowercase-and-hyphenated slug for a phrase.
@@ -42,7 +42,7 @@ function pollRing(phrase,body,peercon){
       if (pollRq.readyState == 4) {
         // parse response
         var resbody = JSON.parse(pollRq.responseText);
-        
+
         if (resbody.answer) {
           // connect to the answer
           peercon.setRemoteDescription(
@@ -56,7 +56,7 @@ function pollRing(phrase,body,peercon){
   pollRq.open("POST","/api/ring/"+phrase);
   pollRq.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
-  pollRq.send(body);  
+  pollRq.send(body);
 }
 
 function answerRing(phrase,body,peercon){
@@ -67,11 +67,11 @@ function answerRing(phrase,body,peercon){
           return f(phrase,JSON.stringify({ "session": desc }));
         };
       }
-      
+
       if (answerRq.readyState == 4) {
         //parse response
         var resbody = JSON.parse(answerRq.responseText);
-        
+
         if(resbody.status == "answered") {
           //inform the user that they're waiting for the other end
           //to connect (if they haven't already)
@@ -91,7 +91,7 @@ function answerRing(phrase,body,peercon){
 
 function onRemoteStreamConnected(evt){
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
-    
+
   //Do other "on remote client connected" stuff
 }
 
@@ -99,37 +99,41 @@ function startRinging(phrase,stream){
   //Crete a peer connection that will use Google's STUN server
   var peercon = new RTCPeerConnection({
     "iceServers": [{"url": "stun:stun.l.google.com:19302"}]});
-  
+
   //add our stream to the connection
   peercon.addStream(stream);
-  
+
   //add a listener for the stream from the other end
   peercon.onaddstream = onRemoteStreamConnected;
-    
+
   var firstRing = new XMLHttpRequest();
    firstRing.onreadystatechange = function () {
       function ringFromDesc (f) {
         return function (desc) {
           //TODO: I'm reading some stuff about how Opus should be listed
           //as preferred at this point?
-          
+
           //I'm not completely sure I understand this line (we add the session
           //we just made as a "local description"? Uh... duh?)
           peercon.setLocalDescription(desc);
-          
+
           //Send this request to the other end
-          return f(phrase,JSON.stringify({ "session": desc }),peercon);
+          return f(phrase,JSON.stringify({ "session": desc.sdp }),peercon);
         };
       }
-      
+
       if (firstRing.readyState == 4) {
         //parse response
         var resbody = JSON.parse(firstRing.responseText);
-        
+
         //NOTE: Maybe we should hold off on creating the session offers
         //until there's two endpoints on the line
         if (resbody.waiting) {
-          peercon.createAnswer(resbody.waiting,ringFromDesc(answerRing));
+          //add the remote session to the connection
+          peercon.setRemoteDescription(
+            new RTCSessionDescription(resbody.waiting));
+
+          peercon.createAnswer(ringFromDesc(answerRing));
         } else {
           peercon.createOffer(ringFromDesc(pollRing));
         }
@@ -138,7 +142,7 @@ function startRinging(phrase,stream){
   firstRing.open("GET","/api/ring/"+phrase);
   firstRing.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
-  firstRing.send();  
+  firstRing.send();
 }
 
 function beginPhrase(phrase) {
@@ -156,7 +160,7 @@ function beginPhrase(phrase) {
         "camera access on chatphrase.com and refresh the page.";
     }
   });
-  
+
   //switch to limbo until media is successfully gotten
   switchState("limbo");
 }
@@ -166,8 +170,7 @@ function goToPhrase(phrase) {
   changeLocation(slugify(phrase));
 }
 
-// Event listener is specified in the Jade for the page itself
-
+// Phrase submit event listener is specified in the Jade for the page itself
 
 // Do hashslash location.
 function updateFromHash() {
@@ -176,7 +179,7 @@ function updateFromHash() {
   if (location.hash && location.hash.substr(1,1) == '/'
     && location.hash.length > 2){
     beginPhrase(slugify(decodeURIComponent(location.hash.substr(2))));
-    
+
   //If the URL has no hash component, or it has some meaningless
   //non-hashslash value
   } else {
