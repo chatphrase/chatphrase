@@ -205,7 +205,8 @@ function beginPhrase(phrase) {
         "camera access on chatphrase.com and refresh the page.";
     } else {
       document.getElementById('virgil').textContent =
-        "Recieved errortrying to getUserMedia: " + err;
+        "Recieved error trying to getUserMedia: " + 
+          (typeof err == "string" ? err : JSON.stringify(err)) ;
     }
   });
 
