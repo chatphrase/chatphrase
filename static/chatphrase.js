@@ -132,7 +132,10 @@ function addIce(peercon, ice){
 function startRinging(phrase,stream){
   //Crete a peer connection that will use Google's STUN server
   var peercon = new RTCPeerConnection({
-    "iceServers": [{"url": "stun:stun.l.google.com:19302"}]});
+    "iceServers": [{"url": "stun:stun.l.google.com:19302"},{
+            url: 'turn:homeo@turn.bistri.com:80',
+            credential: 'homeo'
+        }]});
 
   //add our stream to the connection
   peercon.addStream(stream);
@@ -173,7 +176,10 @@ function startRinging(phrase,stream){
 
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
-          peercon.createOffer(ringFromDesc(pollRing));
+          peercon.createOffer(ringFromDesc(pollRing), null,
+            {'mandatory': {
+              'OfferToReceiveAudio': true,
+              'OfferToReceiveVideo': true }});
         }
       }
     };
@@ -191,12 +197,15 @@ function beginPhrase(phrase) {
     startRinging(phrase,stream);
     switchState("room");
   },function(err){
-    if(err.code == err.PERMISSION_DENIED){
+    if(err.code && err.code == err.PERMISSION_DENIED){
       document.getElementById('virgil').textContent =
         "It looks like we've been denied permission to access your camera. "+
         "We need access to your camera to start the call (it wouldn't be "+
         "much of a video call if we didn't). Please reset permissions for "+
         "camera access on chatphrase.com and refresh the page.";
+    } else {
+      document.getElementById('virgil').textContent =
+        "Recieved errortrying to getUserMedia: " + err;
     }
   });
 

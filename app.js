@@ -92,17 +92,22 @@ module.exports = function appctor(cfg) {
 
         if (err) return next(err);
 
+        var multi = db.multi()
+        .del('answered/' + req.params.slug)
+        .del('ice/answerer/'+req.params.slug);
+        
+        queue()
+        //delete the used answer line
+        .defer(multi.exec.bind(multi))
         // stop listening for answers
-        unsubscribe(channel,function(err) {
+        .defer(unsubscribe,channel)
+        .await(function(err) {
           if (err) return next(err);
 
           //respond to the request
           res.send({answer: JSON.parse(reply),
             ice: ice ? ice.map(JSON.parse) : ice});
         });
-
-        //no need to clear the answered record or ICE data,
-        //we'll let the TTL handle that
       });
     }
 
@@ -148,7 +153,7 @@ module.exports = function appctor(cfg) {
       if (reply[0]) {
         db.multi()
           //send a message to calls ringing on this line
-          .publish(req.params.slug,JSON.stringify(req.body))
+          .publish('waiter/'+req.params.slug,JSON.stringify(req.body))
           //set an "answer" record (with a short-ish TTL, for bogus answers)
           .setex('answered/'+req.params.slug,
             POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS,
