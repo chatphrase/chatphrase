@@ -14,7 +14,6 @@ html
         display: none;
       }
     script(src='/adapter.js')
-    script(src='/chatphrase.js')
   body
     #landing.page.active
       form(onsubmit="goToPhrase(document.getElementById('phrase').value)")
@@ -25,4 +24,4 @@ html
       #waiting
       video(autoplay)#vidscreen
       video(autoplay)#pip
-  
+    script(src='/chatphrase.js')
