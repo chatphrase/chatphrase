@@ -106,17 +106,22 @@ function onRemoteStreamConnected(evt){
 // Constructs a function that posts ICE candidates.
 function icePoster(phrase, party) {
   return function(evt) {
-    var iceRq = new XMLHttpRequest();
-     iceRq.onreadystatechange = function () {
-        if (iceRq.readyState == 4) {
-          //parse response
-          console.log(evt.candidate,iceRq.responseText);
-        }
-      };
-    iceRq.open("POST","/api/ice/"+phrase);
-    iceRq.setRequestHeader(
-      "Content-type", "application/json; charset=utf-8");
-    iceRq.send(JSON.stringify({party: party, ic: evt.candidate}));
+    // After all the ICE candidates have been worked over,
+    // onicecandidate gets called with an event without a candidate.
+    // Suppress that event.
+    if (evt.candidate) {
+      var iceRq = new XMLHttpRequest();
+       iceRq.onreadystatechange = function () {
+          if (iceRq.readyState == 4) {
+            //parse response
+            console.log(evt.candidate,iceRq.responseText);
+          }
+        };
+      iceRq.open("POST","/api/ice/"+phrase);
+      iceRq.setRequestHeader(
+        "Content-type", "application/json; charset=utf-8");
+      iceRq.send(JSON.stringify({party: party, ic: evt.candidate}));
+    }
   };
 }
 

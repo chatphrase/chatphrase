@@ -53,7 +53,8 @@ module.exports = function appctor(cfg) {
       .exec(function(err,reply){
         if(err) return next(err);
         if(reply[0]) {
-          return res.send({waiting:reply, ice:reply[1]});
+          return res.send({waiting:reply,
+            ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
         } else {
           return res.send({status:'ready'});
         }
@@ -63,8 +64,8 @@ module.exports = function appctor(cfg) {
   //Polling endpoint to offer a connection,
   //and to see if somebody has answered
   app.post('/api/ring/:slug', function(req, res, next){
-    function clearSubscription() {
-      dbUnsubscribe(req.body.session);
+    function clearSubscription(cb) {
+      dbUnsubscribe(req.body.session,cb);
       delete subscriptionCbs[req.body.session];
     }
 
@@ -93,7 +94,8 @@ module.exports = function appctor(cfg) {
           if (err) return next(err);
 
           //respond to the request,
-          res.send({answer:reply, ice: ice});
+          res.send({answer: reply,
+            ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
         });
 
         //no need to clear the answered record or ICE data,
@@ -154,7 +156,8 @@ module.exports = function appctor(cfg) {
           .del('ice/waiter/'+req.params.slug)
           .exec(function(err){
             if (err) return next(err);
-            res.send({status:'answered', ice: reply[1]});
+            res.send({status:'answered',
+              ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
           });
       }
       //if there was no waiting record (say, perhaps, somebody already
@@ -169,7 +172,8 @@ module.exports = function appctor(cfg) {
   app.post('/api/ice/:slug', function(req, res, next) {
     //NOTE: This is maybe a bit more labyrinthine than it should be
     db.multi()
-      .rpush('ice/'+req.body.party+'/'+req.params.slug, req.body.ic)
+      .rpush('ice/'+req.body.party+'/'+req.params.slug,
+        JSON.stringify(req.body.ic))
       .expire('ice/'+req.body.party+'/'+req.params.slug,
         POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS)
       .exec(function(err){
