@@ -122,10 +122,15 @@ function icePoster(phrase, party) {
 
 //Function to handle incoming ICE candidates.
 function addIce(peercon, ice){
+  function addCandidate(candidate) {
+    peercon.addIceCandidate(candidate,
+      function() {console.log('success',candidate)},
+      function(err) {console.error(candidate,err)});
+  }
   if (ice) {
     for (var i=0; i < ice.length; i++){
-      peercon.addIceCandidate(new RTCIceCandidate(ice[i]),
-        null, consoleError);
+      console.log(ice[i]);
+      addCandidate(new RTCIceCandidate(ice[i]));
     }
   }
 }
