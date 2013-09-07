@@ -44,18 +44,26 @@ function pollRing(phrase,body,peercon){
           // connect to the answer
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.answer),
-            null,consoleError);
-          
-          addIce(peercon,resbody.ice);
-        } else {
-          // Keep ringing
-          return pollRing(phrase, body, peercon);
+            function(){
+              console.log('connected to',resbody.waiting);
+            },consoleError);
         }
+        
+        // For a second let's make-believe there can never be ICE
+        // before we've received the session description
+        addIce(peercon,resbody.ice);
+        
+        // Keep ringing and gathering ICE candidates until the
+        // remote stream handler aborts the running poll
+        return pollRing(phrase, body, peercon);
       }
     };
   pollRq.open("POST","/api/ring/"+phrase);
   pollRq.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
+    
+  //allow the remote stream handler to terminate this
+  enormousHackToStopPolling = pollRq;
   pollRq.send(body);
 }
 
@@ -92,10 +100,16 @@ function answerRing(phrase,body,peercon){
   answerRq.send(body);
 }
 
+//because keeping track of a proper polling state is just too hard
+var enormousHackToStopPolling;
+
 function onRemoteStreamConnected(evt){
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
 
   //Do other "on remote client connected" stuff
+  if(enormousHackToStopPolling) {
+    enormousHackToStopPolling.abort();
+  }
 }
 
 // Constructs a function that posts ICE candidates.
@@ -108,8 +122,7 @@ function icePoster(phrase, party) {
       var iceRq = new XMLHttpRequest();
        iceRq.onreadystatechange = function () {
           if (iceRq.readyState == 4) {
-            //parse response
-            console.log(evt.candidate,iceRq.responseText);
+            //do nothing
           }
         };
       iceRq.open("POST","/api/ice/"+phrase);
@@ -124,12 +137,11 @@ function icePoster(phrase, party) {
 function addIce(peercon, ice){
   function addCandidate(candidate) {
     peercon.addIceCandidate(candidate,
-      function() {console.log('success',candidate)},
+      function() {console.log('added',candidate)},
       function(err) {console.error(candidate,err)});
   }
   if (ice) {
     for (var i=0; i < ice.length; i++){
-      console.log(ice[i]);
       addCandidate(new RTCIceCandidate(ice[i]));
     }
   }
@@ -178,7 +190,9 @@ function startRinging(phrase,stream){
           //add the remote session to the connection
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.waiting),
-            null, consoleError);
+            function(){
+              console.log('connected to',resbody.waiting);
+            }, consoleError);
 
           addIce(peercon,resbody.ice);
 

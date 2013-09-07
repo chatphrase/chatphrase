@@ -58,6 +58,7 @@ module.exports = function appctor(cfg) {
       .lrange('ice/waiter/'+req.params.slug, 0, -1)
       .exec(function(err,reply){
         if(err) return next(err);
+
         if(reply[0]) {
           return res.send({waiting: JSON.parse(reply[0]),
             ice: reply[1] ? reply[1].map(JSON.parse) : reply[1]});
@@ -150,6 +151,9 @@ module.exports = function appctor(cfg) {
 
     function handleDBResponse(err, reply) {
       if (err) return next(err);
+      //TODO: refactor to keep allowing calls after connection for ICE data,
+      //for those scenarios where the waiter is still gathering their
+      //ICE candidates after connection
       if (reply[0]) {
         db.multi()
           //send a message to calls ringing on this line
@@ -181,6 +185,29 @@ module.exports = function appctor(cfg) {
   //Endpoint to add ICE data
   app.post('/api/ice/:slug', function(req, res, next) {
     //NOTE: This is maybe a bit more labyrinthine than it should be
+    var multi = db.multi()
+      .rpush('ice/'+req.body.party+'/'+req.params.slug,
+        JSON.stringify(req.body.ic))
+      .expire('ice/'+req.body.party+'/'+req.params.slug,
+        POLL_WAIT_SECONDS + REQUEST_EXPIRE_SECONDS);
+       
+    //TODO: Make this symmetrical
+    if(req.body.party == "answerer")
+      multi.publish("waiter/"+req.params.slug,null);
+    
+    multi.exec(function(err){
+        if(err) return next(err);
+        res.send({status:'noted'});
+      });
+  });
+  
+  // Endpoint to, at some more thoroughly stateful point in the future,
+  // clear the channel for the next two endpoints that want to use it
+  /*
+  app.post('/api/connected/:slug', function(req, res, next) {
+    var otherparty = req.body.party == "answerer" ? "waiting" : "answerer";
+    
+    //NOTE: This is maybe a bit more labyrinthine than it should be
     db.multi()
       .rpush('ice/'+req.body.party+'/'+req.params.slug,
         JSON.stringify(req.body.ic))
@@ -190,7 +217,7 @@ module.exports = function appctor(cfg) {
         if(err) return next(err);
         res.send({status:'noted'});
       });
-  });
+  });*/
 
   return app;
 };
