@@ -45,7 +45,7 @@ function pollRing(phrase,body,peercon){
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.answer),
             function(){
-              console.log('connected to',resbody.waiting);
+              console.log('connected to',resbody.answer);
             },consoleError);
         }
         
@@ -150,10 +150,12 @@ function addIce(peercon, ice){
 function startRinging(phrase,stream){
   //Crete a peer connection that will use Google's STUN server
   var peercon = new RTCPeerConnection({
-    "iceServers": [{"url": "stun:stun.l.google.com:19302"},{
-            url: 'turn:homeo@turn.bistri.com:80',
-            credential: 'homeo'
-        }]});
+    "iceServers": [{"url": "stun:stun.l.google.com:19302"}
+        //,{
+        //    url: 'turn:homeo@turn.bistri.com:80',
+        //    credential: 'homeo'
+        //}
+        ]});
 
   //add our stream to the connection
   peercon.addStream(stream);
