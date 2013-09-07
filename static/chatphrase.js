@@ -105,11 +105,6 @@ var enormousHackToStopPolling;
 
 function onRemoteStreamConnected(evt){
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
-
-  //Do other "on remote client connected" stuff
-  if(enormousHackToStopPolling) {
-    enormousHackToStopPolling.abort();
-  }
 }
 
 // Constructs a function that posts ICE candidates.
@@ -117,8 +112,8 @@ function icePoster(phrase, party) {
   return function(evt) {
     // After all the ICE candidates have been worked over,
     // onicecandidate gets called with an event without a candidate.
-    // Suppress that event.
-    if (evt.candidate) {
+    // Send that so the other end knows when to stop ICE polling.
+    //if (evt.candidate) {
       var iceRq = new XMLHttpRequest();
        iceRq.onreadystatechange = function () {
           if (iceRq.readyState == 4) {
@@ -128,8 +123,9 @@ function icePoster(phrase, party) {
       iceRq.open("POST","/api/ice/"+phrase);
       iceRq.setRequestHeader(
         "Content-type", "application/json; charset=utf-8");
-      iceRq.send(JSON.stringify({party: party, ic: evt.candidate}));
-    }
+      iceRq.send(JSON.stringify({party: party,
+        ic: evt.candidate ? evt.candidate : null}));
+    //}
   };
 }
 
@@ -141,8 +137,12 @@ function addIce(peercon, ice){
       function(err) {console.error(candidate,err)});
   }
   if (ice) {
-    for (var i=0; i < ice.length; i++){
-      addCandidate(new RTCIceCandidate(ice[i]));
+    for (var i=0; i < ice.length; i++) {
+      if(ice[i])
+        addCandidate(new RTCIceCandidate(ice[i]));
+      else if(enormousHackToStopPolling) {
+        enormousHackToStopPolling.abort();
+      }
     }
   }
 }
