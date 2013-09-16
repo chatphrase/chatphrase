@@ -148,12 +148,16 @@ function addIce(peercon, ice){
 }
 
 function startRinging(phrase,stream){
-  //Crete a peer connection that will use Google's STUN server
+  // Create a peer connection that will use
+  // vline's STUN server, Google's STUN server,
+  // and numb.viagenie.ca for TURN
   var peercon = new RTCPeerConnection({
-    "iceServers": [{"url": "stun:stun.l.google.com:19302"}
+    "iceServers": [
+        {"url": "stun:stun.vline.com"}
+        ,{"url": "stun:stun.l.google.com:19302"}
         ,{
-            url: 'turn:homeo@turn.bistri.com:80',
-            credential: 'homeo'
+            url: 'turn:ice%40chatphrase%2ecom@numb.viagenie.ca',
+            credential: 'yovipletskickit'
         }
         ]});
 
@@ -202,9 +206,10 @@ function startRinging(phrase,stream){
         } else {
           peercon.createOffer(ringFromDesc(pollRing),
             null, consoleError,
-            {'mandatory': {
-              'OfferToReceiveAudio': true,
-              'OfferToReceiveVideo': true }});
+            { mandatory: {
+              OfferToReceiveAudio: true,
+              OfferToReceiveVideo: true,
+              IceRestart: true}});
         }
       }
     };
