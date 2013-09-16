@@ -103,6 +103,9 @@ function answerRing(phrase,body,peercon){
 //because keeping track of a proper polling state is just too hard
 var enormousHackToStopPolling;
 
+// This is also hacky, but this time it's not my fault
+var persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome;
+
 function onRemoteStreamConnected(evt){
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
 }
@@ -160,6 +163,8 @@ function startRinging(phrase,stream){
             credential: 'yovipletskickit'
         }
         ]});
+
+  persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome = peercon;
 
   //add our stream to the connection
   peercon.addStream(stream);
