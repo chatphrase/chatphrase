@@ -1,0 +1,50 @@
+/* Core scaffolding */
+
+html, body, .page {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.inactive {
+  display: none;
+}
+
+/* Room scaffolding */
+
+#vidscreen {
+  height: 100%;
+  width: 100%;
+}
+
+#pip {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  height: 15%;
+}
+
+/* Landing page style */
+
+#landing {
+  display: table;
+  margin: 0 auto;
+}
+
+.centercell {
+  display: table-cell;
+  vertical-align: middle;
+  width: 50%;
+}
+
+.sitename {
+  background: url(icon.svg);
+  background-repeat: no-repeat;
+  margin-left: 72px;
+}
+
+input, button {
+  height: 48px;
+  font-size: 28px;
+}

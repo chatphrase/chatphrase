@@ -3,21 +3,14 @@ html
   head
     meta(charset="utf-8")
     block head
+      meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
       block title
         title Chatphrase
       block icon
         link(rel="icon", href="/icon.png")
       block styles
-        style.
-          html, body, .page {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-          }
-          .inactive {
-            display: none;
-          }
+        link(href='http://fonts.googleapis.com/css?family=Rokkitt:400,700', rel='stylesheet', type='text/css')
+        link(href='/style.css', rel='stylesheet', type='text/css')
       block scripts
   body
     block body
