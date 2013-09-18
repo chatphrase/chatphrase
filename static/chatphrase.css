@@ -49,6 +49,11 @@ video {
   line-height: 1;
 }
 
+.betaspan {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
 input, button {
   box-sizing: border-box;
   height: 48px;
