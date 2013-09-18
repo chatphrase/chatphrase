@@ -1,14 +1,19 @@
 /* Core scaffolding */
 
-html, body, .page {
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body, .page {
   min-height: 100%;
-  width: 100%;
   margin: 0;
   padding: 0;
 }
 
 .inactive {
-  display: none;
+  display: none !important;
 }
 
 /* Room scaffolding */
@@ -23,6 +28,10 @@ html, body, .page {
   right: 24px;
   bottom: 24px;
   height: 15%;
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  -ms-transform: rotateY(180deg);
+  transform: rotateY(180deg);
 }
 
 /* Landing page style */
@@ -35,16 +44,18 @@ html, body, .page {
 .centercell {
   display: table-cell;
   vertical-align: middle;
-  width: 50%;
 }
 
 .sitename {
-  background: url(icon.svg);
-  background-repeat: no-repeat;
-  margin-left: 72px;
+  font-size: 64px;
+  line-height: 1;
 }
 
 input, button {
+  box-sizing: border-box;
   height: 48px;
   font-size: 28px;
+  padding: 6px 12px;
+  border: 2px solid #1d143c;
+  vertical-align: middle;
 }
