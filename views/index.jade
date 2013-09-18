@@ -11,8 +11,8 @@ block body
     .centercell
       h1.sitename chatphrase
       form(onsubmit="goToPhrase(document.getElementById('phrase').value);return false;")
-        input#phrase(type='text')
-        button(type="submit") Go
+        input#phrase(type='text',pattern='.+')
+        button#gobutton(type="submit") &#x2794;
   #limbo.page.inactive
     #virgil
   #room.page.inactive

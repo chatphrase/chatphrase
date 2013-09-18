@@ -1,13 +1,7 @@
 /* Core scaffolding */
 
-html {
+html, body, .page {
   height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-body, .page {
-  min-height: 100%;
   margin: 0;
   padding: 0;
 }
@@ -17,6 +11,10 @@ body, .page {
 }
 
 /* Room scaffolding */
+
+video {
+  display: block;
+}
 
 #vidscreen {
   height: 100%;
@@ -56,6 +54,23 @@ input, button {
   height: 48px;
   font-size: 28px;
   padding: 6px 12px;
-  border: 2px solid #1d143c;
   vertical-align: middle;
 }
+
+input {
+  border: 2px solid #1d143c;
+  background-color: #f6f4fc;
+  color: #1d143c;
+}
+
+button {
+  border: 2px solid #1d143c;
+  background-color: #312164;
+  color: #f6f4fc;
+  cursor: pointer;
+}
+
+#phrase:invalid + #gobutton {
+  color: #1d143c;
+}
+
