@@ -159,10 +159,11 @@ function startRinging(phrase,stream){
         {"url": "stun:stun.vline.com"}
         ,{"url": "stun:stun.l.google.com:19302"}
         ,{
-            url: 'turn:ice%40chatphrase%2ecom@numb.viagenie.ca',
+            url: 'turn:@numb.viagenie.ca',
+            username: 'ice@chatphrase.com',
             credential: 'yovipletskickit'
         }
-        ]});
+      ]});
 
   persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome = peercon;
 
