@@ -232,7 +232,9 @@ function beginPhrase(phrase) {
     startRinging(phrase,stream);
     switchState("room");
   },function(err){
-    if(err.code && err.code == err.PERMISSION_DENIED){
+    if(err.code && err.code == err.PERMISSION_DENIED
+      || err.name == "PERMISSION_DENIED"
+    ){
       document.getElementById('virgil').textContent =
         "It looks like we've been denied permission to access your camera. "+
         "We need access to your camera to start the call (it wouldn't be "+
