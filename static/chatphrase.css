@@ -45,13 +45,16 @@ video {
 }
 
 .sitename {
+  position: relative;
   font-size: 64px;
   line-height: 1;
 }
 
 .betaspan {
-  font-size: 48px;
+  position: absolute;
+  font-size: 32px;
   opacity: 0.5;
+  bottom: 10%;
 }
 
 input, button {
