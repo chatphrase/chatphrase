@@ -182,7 +182,7 @@ function startRinging(phrase,stream){
 
           //I'm not completely sure I understand this line (we add the session
           //we just made as a "local description"? Uh... duh?)
-          peercon.setLocalDescription(desc, null, consoleError);
+          peercon.setLocalDescription(desc, function(){}, consoleError);
 
           //Send this request to the other end
           return f(phrase,JSON.stringify(desc),peercon);
