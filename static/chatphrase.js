@@ -210,16 +210,17 @@ function startRinging(phrase,stream){
 
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
-          peercon.createOffer(ringFromDesc(pollRing),
-            null, consoleError,
-            { mandatory: {
-                OfferToReceiveAudio: 'true',
-                OfferToReceiveVideo: 'true',
-                IceRestart: 'true'},
+          peercon.createOffer(ringFromDesc(pollRing),consoleError,
+            { 
+              mandatory: {
+                OfferToReceiveAudio: true,
+                OfferToReceiveVideo: true,
+                },
               optional: [
-                { DtlsSrtpKeyAgreement: 'true'}
-              ]
-            });
+                { DtlsSrtpKeyAgreement: true },
+                { IceRestart: true }
+                ]
+              });
         }
       }
     };
