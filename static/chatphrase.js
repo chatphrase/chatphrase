@@ -163,7 +163,7 @@ function startRinging(phrase,stream){
             username: 'ice@chatphrase.com',
             credential: 'yovipletskickit'
         }
-      ]});
+      ]}, {optional:[{DtlsSrtpKeyAgreement: true}]});
 
   persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome = peercon;
 
@@ -217,7 +217,6 @@ function startRinging(phrase,stream){
                 OfferToReceiveVideo: true,
                 },
               optional: [
-                { DtlsSrtpKeyAgreement: true },
                 { IceRestart: true }
                 ]
               });
