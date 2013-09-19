@@ -213,9 +213,13 @@ function startRinging(phrase,stream){
           peercon.createOffer(ringFromDesc(pollRing),
             null, consoleError,
             { mandatory: {
-              OfferToReceiveAudio: true,
-              OfferToReceiveVideo: true,
-              IceRestart: true}});
+                OfferToReceiveAudio: 'true',
+                OfferToReceiveVideo: 'true',
+                IceRestart: 'true'},
+              optional: [
+                { DtlsSrtpKeyAgreement: 'true'}
+              ]
+            });
         }
       }
     };
