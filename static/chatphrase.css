@@ -64,6 +64,7 @@ input, button {
   font-size: 28px;
   padding: 6px 12px;
   vertical-align: middle;
+  margin: 0 2px;
 }
 
 input {
