@@ -79,6 +79,7 @@ button {
   background-color: #312164;
   color: #f6f4fc;
   cursor: pointer;
+  line-height: 1;
 }
 
 #phrase:invalid + #gobutton {
