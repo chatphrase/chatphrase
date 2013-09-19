@@ -55,6 +55,7 @@ video {
 }
 
 input, button {
+  -moz-box-sizing: border-box;
   box-sizing: border-box;
   height: 48px;
   font-size: 28px;

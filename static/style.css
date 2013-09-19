@@ -4,3 +4,11 @@ body {
   font-family: Rokkitt, serif;
   text-align: center;
 }
+
+/* Normalizations */
+
+input::-moz-focus-inner /*Remove button padding in FF*/
+{ 
+    border: 0;
+    padding: 0;
+}
