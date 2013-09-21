@@ -48,11 +48,11 @@ function pollRing(phrase,body,peercon){
               console.log('connected to',resbody.answer);
             },consoleError);
         }
-        
+
         // For a second let's make-believe there can never be ICE
         // before we've received the session description
         addIce(peercon,resbody.ice);
-        
+
         // Keep ringing and gathering ICE candidates until the
         // remote stream handler aborts the running poll
         return pollRing(phrase, body, peercon);
@@ -61,7 +61,7 @@ function pollRing(phrase,body,peercon){
   pollRq.open("POST","/api/ring/"+phrase);
   pollRq.setRequestHeader(
     "Content-type", "application/json; charset=utf-8");
-    
+
   //allow the remote stream handler to terminate this
   enormousHackToStopPolling = pollRq;
   pollRq.send(body);
@@ -159,11 +159,18 @@ function startRinging(phrase,stream){
         {"url": "stun:stun.vline.com"}
         ,{"url": "stun:stun.l.google.com:19302"}
         ,{
-            url: 'turn:@numb.viagenie.ca',
+            url: 'turn:numb.viagenie.ca',
             username: 'ice@chatphrase.com',
             credential: 'yovipletskickit'
         }
-      ]}, {optional:[{DtlsSrtpKeyAgreement: true}]});
+      ]},
+
+      // DTLS-SRTP is the future of WebRTC.
+      // Versions of Chrome before 31 don't do DTLS-SRTP by default
+      // (due to an inefficient certificate generation scheme or something),
+      // so you need to explicitly request it to be able to interoperate
+      // with other implementations (like Firefox).
+      {optional:[{DtlsSrtpKeyAgreement: true}]});
 
   persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome = peercon;
 
@@ -198,7 +205,7 @@ function startRinging(phrase,stream){
         peercon.onicecandidate = icePoster(phrase,
           resbody.waiting ? 'answerer' : 'waiter');
         if (resbody.waiting) {
-          
+
           //add the remote session to the connection
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.waiting),
@@ -211,7 +218,7 @@ function startRinging(phrase,stream){
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
           peercon.createOffer(ringFromDesc(pollRing),consoleError,
-            { 
+            {
               mandatory: {
                 OfferToReceiveAudio: true,
                 OfferToReceiveVideo: true,
@@ -247,7 +254,7 @@ function beginPhrase(phrase) {
         "camera access on chatphrase.com and refresh the page.";
     } else {
       document.getElementById('virgil').textContent =
-        "Recieved error trying to getUserMedia: " + 
+        "Recieved error trying to getUserMedia: " +
           (typeof err == "string" ? err : JSON.stringify(err)) ;
     }
   });
