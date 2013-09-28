@@ -22,5 +22,8 @@
     "envigor": "~0.4.2",
     "nowww": "~1.1.2",
     "queue-async": "~1.0.4"
+  },
+  "engines": {
+    "node": "0.10.17"
   }
 }
