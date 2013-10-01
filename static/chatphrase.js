@@ -115,6 +115,10 @@ function pollRing(phrase,body,peercon){
         // parse response
         var resbody = JSON.parse(pollRq.responseText);
 
+        // Add or queue the ICE for the remote description
+        addIce(peercon,resbody.ice);
+
+        //If we have the remote answerer's session description
         if (resbody.answer) {
           // connect to the answer
           peercon.setRemoteDescription(
@@ -122,10 +126,10 @@ function pollRing(phrase,body,peercon){
             function(){
               console.log('connected to',resbody.answer);
             },consoleError);
-        }
 
-        // Add or queue the ICE for the remote description
-        addIce(peercon,resbody.ice);
+          //stop queuing now that we've set the remote description
+          clearRemoteIceQueue(peercon);
+        }
 
         // Keep ringing and gathering ICE candidates until the
         // remote stream handler aborts the running poll
