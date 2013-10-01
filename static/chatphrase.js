@@ -16,6 +16,77 @@ function slugify(phrase) {
     .replace(/ /g,'-');
 }
 
+//because keeping track of a proper polling state is just too hard
+var enormousHackToStopPolling;
+
+// This is also hacky, but this time it's not my fault
+var persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome;
+
+// Constructs a function that posts ICE candidates.
+function icePoster(phrase, party) {
+  return function(evt) {
+    // After all the ICE candidates have been worked over,
+    // onicecandidate gets called with an event without a candidate.
+    // Send that so the other end knows when to stop ICE polling.
+    //if (evt.candidate) {
+      var iceRq = new XMLHttpRequest();
+       iceRq.onreadystatechange = function () {
+          if (iceRq.readyState == 4) {
+            //do nothing
+          }
+        };
+      iceRq.open("POST","/api/ice/"+phrase);
+      iceRq.setRequestHeader(
+        "Content-type", "application/json; charset=utf-8");
+      iceRq.send(JSON.stringify({party: party,
+        ic: evt.candidate ? evt.candidate : null}));
+    //}
+  };
+}
+
+// Constructor for function that adds candidates to a peer connection.
+// Useful for passing to the candidate queue's forEach.
+function candidateAdder(peercon) {
+  return function (candidate) {
+    peercon.addIceCandidate(candidate,
+      function() {console.log('added',candidate)},
+      function(err) {console.error(candidate,err)});
+  };
+}
+
+//Another hack, to not add ICE until the remote session has been set.
+var remoteIceQueue = [];
+
+function clearRemoteIceQueue(peercon) {
+  remoteIceQueue.forEach(candidateAdder(peercon));
+  remoteIceQueue = null;
+}
+
+//Function to handle incoming ICE candidates.
+function addIce(peercon, ice) {
+
+  // Add a candidate to the peercon, or queue it if we're queuing ICE
+  // candidates right now (because we haven't set the remote session
+  // description yet)
+  function addCandidate(candidate) {
+    if (remoteIceQueue) remoteIceQueue.push(candidate);
+    else candidateAdder(peercon)(candidate);
+  }
+
+  // Only some signals come with ICE, but we call this function on all signals.
+  if (ice) {
+    for (var i=0; i < ice.length; i++) {
+      if(ice[i])
+        addCandidate(new RTCIceCandidate(ice[i]));
+      // If there's a null in the ICE candidate array, there won't be any more
+      // candidates and we should stop polling for them.
+      else if(enormousHackToStopPolling) {
+        enormousHackToStopPolling.abort();
+      }
+    }
+  }
+}
+
 // Switch which "page" element is currently visible.
 function switchState(stateName) {
   var states = document.querySelectorAll(".page.active");
@@ -27,6 +98,10 @@ function switchState(stateName) {
   var newactive = document.getElementById(stateName);
   newactive.classList.remove('inactive');
   newactive.classList.add('active');
+}
+
+function onRemoteStreamConnected(evt){
+  attachMediaStream(document.getElementById('vidscreen'),evt.stream);
 }
 
 //TODO: general XHR function, with timeout CB
@@ -49,8 +124,7 @@ function pollRing(phrase,body,peercon){
             },consoleError);
         }
 
-        // For a second let's make-believe there can never be ICE
-        // before we've received the session description
+        // Add or queue the ICE for the remote description
         addIce(peercon,resbody.ice);
 
         // Keep ringing and gathering ICE candidates until the
@@ -100,56 +174,6 @@ function answerRing(phrase,body,peercon){
   answerRq.send(body);
 }
 
-//because keeping track of a proper polling state is just too hard
-var enormousHackToStopPolling;
-
-// This is also hacky, but this time it's not my fault
-var persistentPeerConnectionReferenceToEvadeGarbageCollectionInChrome;
-
-function onRemoteStreamConnected(evt){
-  attachMediaStream(document.getElementById('vidscreen'),evt.stream);
-}
-
-// Constructs a function that posts ICE candidates.
-function icePoster(phrase, party) {
-  return function(evt) {
-    // After all the ICE candidates have been worked over,
-    // onicecandidate gets called with an event without a candidate.
-    // Send that so the other end knows when to stop ICE polling.
-    //if (evt.candidate) {
-      var iceRq = new XMLHttpRequest();
-       iceRq.onreadystatechange = function () {
-          if (iceRq.readyState == 4) {
-            //do nothing
-          }
-        };
-      iceRq.open("POST","/api/ice/"+phrase);
-      iceRq.setRequestHeader(
-        "Content-type", "application/json; charset=utf-8");
-      iceRq.send(JSON.stringify({party: party,
-        ic: evt.candidate ? evt.candidate : null}));
-    //}
-  };
-}
-
-//Function to handle incoming ICE candidates.
-function addIce(peercon, ice){
-  function addCandidate(candidate) {
-    peercon.addIceCandidate(candidate,
-      function() {console.log('added',candidate)},
-      function(err) {console.error(candidate,err)});
-  }
-  if (ice) {
-    for (var i=0; i < ice.length; i++) {
-      if(ice[i])
-        addCandidate(new RTCIceCandidate(ice[i]));
-      else if(enormousHackToStopPolling) {
-        enormousHackToStopPolling.abort();
-      }
-    }
-  }
-}
-
 function startRinging(phrase,stream){
   // Create a peer connection that will use
   // vline's STUN server, Google's STUN server,
@@ -185,10 +209,12 @@ function startRinging(phrase,stream){
       function ringFromDesc (f) {
         return function (desc) {
           //TODO: I'm reading some stuff about how Opus should be listed
-          //as preferred at this point?
+          // as preferred at this point?
 
-          //I'm not completely sure I understand this line (we add the session
-          //we just made as a "local description"? Uh... duh?)
+          //I get why WebRTC works like this now (we can generate session
+          //descriptions that we don't actually end up using with no penalty).
+          //arg 2 is a NOP because Firefox freaks out if it's null, and the
+          //standard doesn't actually say it's optional.
           peercon.setLocalDescription(desc, function(){}, consoleError);
 
           //Send this request to the other end
@@ -200,10 +226,11 @@ function startRinging(phrase,stream){
         //parse response
         var resbody = JSON.parse(firstRing.responseText);
 
-        //NOTE: Maybe we should hold off on creating the session offers
-        //until there's two endpoints on the line
         peercon.onicecandidate = icePoster(phrase,
           resbody.waiting ? 'answerer' : 'waiter');
+
+        // If the signal from the initial request came back that there's
+        // somebody waiting at this phrase
         if (resbody.waiting) {
 
           //add the remote session to the connection
@@ -213,8 +240,13 @@ function startRinging(phrase,stream){
               console.log('connected to',resbody.waiting);
             }, consoleError);
 
+          //Add any ICE candidates attached to this request
           addIce(peercon,resbody.ice);
 
+          // Process the queue we just made
+          clearRemoteIceQueue(peercon);
+
+          //Send our answer to that waiting session
           peercon.createAnswer(ringFromDesc(answerRing));
         } else {
           peercon.createOffer(ringFromDesc(pollRing),consoleError,
