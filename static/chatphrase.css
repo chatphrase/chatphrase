@@ -53,8 +53,12 @@ video {
 .betaspan {
   position: absolute;
   font-size: 32px;
-  opacity: 0.5;
   bottom: 10%;
+  color: rgba(246, 244, 252, 0.5);
+}
+
+.betaspan a{
+  color: rgba(246, 244, 252, 0.8);
 }
 
 input, button {
