@@ -257,11 +257,9 @@ function startRinging(phrase,stream){
             {
               mandatory: {
                 OfferToReceiveAudio: true,
-                OfferToReceiveVideo: true,
+                OfferToReceiveVideo: true
                 },
-              optional: [
-                { IceRestart: true }
-                ]
+              optional: []
               });
         }
       }
