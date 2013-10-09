@@ -114,6 +114,7 @@ function switchState(stateName) {
 }
 
 function onRemoteStreamConnected(evt){
+  document.getElementById('message').textContent = "";
   attachMediaStream(document.getElementById('vidscreen'),evt.stream);
 }
 
@@ -121,7 +122,8 @@ function onRemoteStreamConnected(evt){
 
 var consoleError = console.error.bind(console);
 
-function pollRing(phrase,body,peercon){
+function pollRing(phrase,body,peercon) {
+  document.getElementById('message').textContent = "Waiting...";
   var pollRq = new XMLHttpRequest();
    pollRq.onreadystatechange = function () {
       if (pollRq.readyState == 4) {
@@ -134,6 +136,8 @@ function pollRing(phrase,body,peercon){
         //If we have the remote answerer's session description
         if (resbody.answer) {
           // connect to the answer
+          document.getElementById('message').textContent = "Connecting...";
+
           peercon.setRemoteDescription(
             new RTCSessionDescription(resbody.answer),
             function(){
@@ -158,7 +162,8 @@ function pollRing(phrase,body,peercon){
   pollRq.send(body);
 }
 
-function answerRing(phrase,body,peercon){
+function answerRing(phrase,body,peercon) {
+  document.getElementById('message').textContent = "Connecting...";
   var answerRq = new XMLHttpRequest();
    answerRq.onreadystatechange = function () {
       function ringFromDesc (f) {
@@ -191,7 +196,8 @@ function answerRing(phrase,body,peercon){
   answerRq.send(body);
 }
 
-function startRinging(phrase,stream){
+function startRinging(phrase,stream) {
+  document.getElementById('message').textContent = "Creating connection...";
   // Create a peer connection that will use
   // vline's STUN server, Google's STUN server,
   // and numb.viagenie.ca for TURN
