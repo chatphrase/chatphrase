@@ -4,21 +4,34 @@ html, body, .page {
   height: 100%;
   margin: 0;
   padding: 0;
+  text-align: center;
+}
+
+.page::before { /* Force full line */
+  content: '';
+  display: inline-block;
+  height: 100%;
+  vertical-align: middle;
 }
 
 .inactive {
-  display: none !important;
+  display: none;
 }
 
 /* Room scaffolding */
+
+#message {
+  display: inline-block;
+  vertical-align: 25%;
+}
 
 video {
   display: block;
 }
 
 #vidscreen {
-  height: 100%;
-  width: 100%;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
 }
 
 #pip {
@@ -34,13 +47,8 @@ video {
 
 /* Landing page style */
 
-#landing {
-  display: table;
-  margin: 0 auto;
-}
-
 .centercell {
-  display: table-cell;
+  display: inline-block;
   vertical-align: middle;
 }
 
@@ -89,4 +97,3 @@ button {
 #phrase:invalid + #gobutton {
   color: #1d143c;
 }
-

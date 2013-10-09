@@ -16,6 +16,19 @@ function slugify(phrase) {
     .replace(/ /g,'-');
 }
 
+function returnToLanding() {
+  //TODO: kill the current connection state
+  document.title = 'Chatphrase';
+  document.getElementById("phrase").value = "";
+  document.getElementById('message').textContent = "";
+  switchState("landing");
+}
+
+function resetPageState() {
+  document.getElementById("phrase").value = "";
+  returnToLanding();
+}
+
 //because keeping track of a proper polling state is just too hard
 var enormousHackToStopPolling;
 
@@ -276,25 +289,27 @@ function beginPhrase(phrase) {
     attachMediaStream(document.getElementById('pip'),stream);
     //advance to lobby / connection
     startRinging(phrase,stream);
-    switchState("room");
   },function(err){
     if(err.code && err.code == err.PERMISSION_DENIED
       || err.name == "PERMISSION_DENIED"
     ){
-      document.getElementById('virgil').textContent =
+      document.getElementById('message').textContent =
         "It looks like we've been denied permission to access your camera. "+
         "We need access to your camera to start the call (it wouldn't be "+
         "much of a video call if we didn't). Please reset permissions for "+
         "camera access on chatphrase.com and refresh the page.";
     } else {
-      document.getElementById('virgil').textContent =
+      document.getElementById('message').textContent =
         "Recieved error trying to getUserMedia: " +
           (typeof err == "string" ? err : JSON.stringify(err)) ;
     }
   });
 
   //switch to limbo until media is successfully gotten
-  switchState("limbo");
+  document.getElementById('message').textContent =
+    "Chatphrase will begin connecting once you grant permission to use your "
+    + "camera and microphone...";
+  switchState("room");
 }
 
 //Cheap submission function.
@@ -315,10 +330,8 @@ function updateFromHash() {
   //If the URL has no hash component, or it has some meaningless
   //non-hashslash value
   } else {
-    //Reset to the initial state
-    document.title = 'Chatphrase';
-    document.getElementById("phrase").value = "";
-    switchState("landing");
+    //Set things up so it's just like the page has been opened afresh
+    resetPageState();
   }
 }
 
