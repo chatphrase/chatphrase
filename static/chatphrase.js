@@ -300,10 +300,13 @@ function beginPhrase(phrase) {
       || err.name == "PERMISSION_DENIED"
     ){
       document.getElementById('message').textContent =
-        "It looks like we've been denied permission to access your camera. "+
-        "We need access to your camera to start the call (it wouldn't be "+
-        "much of a video call if we didn't). Please reset permissions for "+
-        "camera access on chatphrase.com and refresh the page.";
+        "Permission to use your camera and microphone has been denied. "+
+        "If you choose to deny permission, reset permissions for "+
+        "camera and microphone access on chatphrase.com. "+
+        "If you did not choose to deny permission, check that another "+
+        "program isn't using the camera and/or microphone. "+
+        "Once your camera and microphone are ready, refresh the "+
+        "page to retry the chat connection.";
     } else {
       document.getElementById('message').textContent =
         "Recieved error trying to getUserMedia: " +
