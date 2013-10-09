@@ -22,7 +22,7 @@ html, body, .page {
 
 #message {
   display: inline-block;
-  vertical-align: 25%;
+  vertical-align: middle;
 }
 
 video {
@@ -31,7 +31,8 @@ video {
 
 #vidscreen {
   position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
+  height: 100%;
+  width: 100%;
 }
 
 #pip {
