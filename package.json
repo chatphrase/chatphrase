@@ -16,12 +16,11 @@
   "author": "Stuart P. Bentley",
   "license": "MIT",
   "dependencies": {
-    "redis": "~0.8.4",
     "express": "~3.3.5",
     "jade": "~0.34.1",
     "envigor": "~0.4.2",
     "nowww": "~1.1.2",
-    "queue-async": "~1.0.4"
+    "caress": "~0.1.0"
   },
   "engines": {
     "node": "0.10.17"
