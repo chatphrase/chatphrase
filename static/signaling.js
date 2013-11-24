@@ -139,7 +139,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
     function beginConnection(status,body,location) {
       if (status == 200) {
         pc.setRemoteDescription(new RTCSessionDescription({sdp: body,
-          type: "offer"}), answerOffer, onError);
+          type: "offer"}), answerOffer(location), onError);
       // If there's no current offer
       } else if (status == 404) {
         // Create the offer
@@ -158,9 +158,11 @@ function chatphraseSignaling (slugPhrase, cbs) {
   }
 
   function answerOffer(location) {
-    pc.createAnswer(setLocalAndPost(location), onError, {
-      mandatory: {},
-      optional: []});
+    return function(){
+      pc.createAnswer(setLocalAndPost(location), onError, {
+        mandatory: {},
+        optional: []});
+    };
   }
 
   function setLocalAndPost(location) {
