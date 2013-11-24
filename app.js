@@ -10,7 +10,7 @@ module.exports = function appctor(cfg) {
   app.use(require('nowww')());
 
   app.use(express.static(__dirname+'/static'));
-  app.use('signal', caress({redis: cfg.redis}));
+  app.use('/signal', caress({redis: cfg.redis}));
 
   app.get('/', function(req,res) {
     res.render('index.jade');
