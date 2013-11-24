@@ -229,7 +229,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
       xhrPutSdp(signalPath, pc.localDescription.sdp, function (status,body) {
         if (!status) {
           onError(body);
-        } else if (status <= 500) {
+        } else if (status >= 500) {
           onError(new Error(
             'Received status ' + status + ' updating SDP: ' + body));
         }
