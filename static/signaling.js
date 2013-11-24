@@ -226,8 +226,9 @@ function chatphraseSignaling (slugPhrase, cbs) {
       // Start polling
       poll();
 
-    // If we're colliding
-    } else if (status == 303) {
+    // If we're colliding or the endpoint is missing
+    // (the endpoint goes missing when someone else answers an offer first)
+    } else if (status == 303 || status == 404) {
       // Re-get the offer
       getOffer();
 
