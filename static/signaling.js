@@ -27,6 +27,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
   };
 
   function xhrPostSdp(url, body, cb, opts) {
+    opts = opts || {};
     var rq = new XMLHttpRequest();
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
@@ -45,6 +46,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
   }
 
   function xhrPutSdp(url, body, cb, opts) {
+    opts = opts || {};
     var rq = new XMLHttpRequest();
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
@@ -68,6 +70,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
   //This isn't STRICTLY SDP-specific, but I'm keeping the name for symmetry.
   function xhrGetSdp(url, cb, opts) {
+    opts = opts || {};
     var rq = new XMLHttpRequest();
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
