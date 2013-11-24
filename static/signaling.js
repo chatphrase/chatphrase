@@ -174,22 +174,47 @@ function chatphraseSignaling (slugPhrase, cbs) {
   }
 
   function continueFromPost(status, body, location) {
+
+    function poll() {
+      // continue polling
+      xhrGetSdp(location, respondToPoll, {ourtag: ourtag});
+    }
+
     // Ignore the "nulLocation" parameter, we never expect to get it.
-    function poller(status, body, nulLocation, etag) {
+    function respondToPoll(status, body, nulLocation, etag) {
+
+      //if there's no change or no body yet
       if (status == 204 || status == 304) {
-        // no change, continue polling
-        xhrGetSdp(location, poller, {ourtag: ourtag});
+        //continue polling
+        poll();
+
+      // if there's a new body
       } else if (status == 200) {
-        pc.setRemoteDescription(new RTCSessionDescription({sdp: body,
-          type: pc.remoteDescription ? pc.remoteDescription.type : "answer"}));
+
+        // save the identifier for this new body
         ourtag = etag;
+
+        // update our peerconnection with the new remote description,
+        // then continue polling
+        pc.setRemoteDescription(new RTCSessionDescription({sdp: body,
+          type: pc.remoteDescription ? pc.remoteDescription.type : "answer"}),
+          poll, onError);
+
+      // if the body is gone (not found, because we don't special-case them)
       } else if (status == 404) {
+        // fire the event for that
         cbs.remoteSignalLost && cbs.remoteSignalLost();
+
+      // if there was some unexpected status
       } else if (status) {
+        // report it as an error
         onError(new Error (
           "Recieved status " + status + " while polling " + location
             + ": " + body));
+
+      // if there was an error in the XHR (no status)
       } else {
+        // report it
         onError(body);
       }
     }
@@ -199,7 +224,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
       // Export the path we've just been given for PUTting updates to
       signalPath = location;
       // Start polling
-      xhrGetSdp(location, poller, {ourtag: ourtag});
+      poll();
 
     // If we're colliding
     } else if (status == 303) {
