@@ -177,7 +177,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
     function poll() {
       // continue polling
-      xhrGetSdp(location, respondToPoll, {ourtag: ourtag});
+      xhrGetSdp(location+'?side=down', respondToPoll, {ourtag: ourtag});
     }
 
     // Ignore the "nulLocation" parameter, we never expect to get it.
@@ -209,7 +209,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
       } else if (status) {
         // report it as an error
         onError(new Error (
-          "Recieved status " + status + " while polling " + location
+          "Got status " + status + " while polling " + location
             + ": " + body));
 
       // if there was an error in the XHR (no status)
@@ -233,7 +233,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
     } else if (status) {
       onError(new Error (
-        "Recieved status " + status + " posting session: " + body));
+        "Got status " + status + " posting session: " + body));
 
     } else {
       onError(body);
@@ -253,14 +253,15 @@ function chatphraseSignaling (slugPhrase, cbs) {
     //if the server is ready to receive our updates
     if (signalPath) {
       // Update our session description with the new ICE candidates
-      xhrPutSdp(signalPath, pc.localDescription.sdp, function (status,body) {
-        if (!status) {
-          onError(body);
-        } else if (status >= 500) {
-          onError(new Error(
-            'Received status ' + status + ' updating SDP: ' + body));
-        }
-      });
+      xhrPutSdp(signalPath+'?side=up', pc.localDescription.sdp,
+        function (status,body) {
+          if (!status) {
+            onError(body);
+          } else if (status >= 500) {
+            onError(new Error(
+              'Got status ' + status + ' updating SDP: ' + body));
+          }
+        });
     }
   }
 
