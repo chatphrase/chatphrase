@@ -72,6 +72,8 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function xhrGetSdp(url, cb, opts) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
+    function handleEnd() {
+    }
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
         return cb(rq.status,rq.responseText,
@@ -164,15 +166,14 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function setLocalAndPost(location) {
     return function(desc) {
       pc.setLocalDescription(desc, function(){
-        xhrPostSdp(location, desc.sdp, continueFromPost(location),
-          onError);
+        xhrPostSdp(location, desc.sdp, continueFromPost, onError);
       }, onError);
     };
   }
 
-  function continueFromPost(location) {
+  function continueFromPost(status, body, location) {
     // Ignore the "nulLocation" parameter, we never expect to get it.
-    function poller(status, body, nulLocation, etag){
+    function poller(status, body, nulLocation, etag) {
       if (status == 204 || status == 304) {
         // no change, continue polling
         xhrGetSdp(location, poller, {ourtag: ourtag});
@@ -190,7 +191,20 @@ function chatphraseSignaling (slugPhrase, cbs) {
         onError(body);
       }
     }
-    xhrGetSdp(location, poller, {ourtag: ourtag});
+
+    if (status == 200) {
+      // Export the path we've just been given for PUTting updates to
+      signalPath = location;
+      // Start polling
+      xhrGetSdp(location, poller, {ourtag: ourtag});
+    } else if (status) {
+      onError(new Error (
+        "Recieved status " + status + " posting to " + location
+          + ": " + body));
+    } else {
+      onError(body);
+    }
+
   }
 
   function onError(err) {

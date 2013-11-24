@@ -66,6 +66,7 @@ var sigHooks = {
     // If we never received the remote stream
     if (!connected) {
       // Restart signaling
+      // TODO: revert message state
       signal.start();
     }
   }
