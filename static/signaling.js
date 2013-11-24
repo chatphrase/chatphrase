@@ -192,15 +192,22 @@ function chatphraseSignaling (slugPhrase, cbs) {
       }
     }
 
-    if (status == 200) {
+    // If the signal endpoint was created
+    if (status == 201) {
       // Export the path we've just been given for PUTting updates to
       signalPath = location;
       // Start polling
       xhrGetSdp(location, poller, {ourtag: ourtag});
+
+    // If we're colliding
+    } else if (status == 303) {
+      // Re-get the offer
+      getOffer();
+
     } else if (status) {
       onError(new Error (
-        "Recieved status " + status + " posting to " + location
-          + ": " + body));
+        "Recieved status " + status + " posting session: " + body));
+
     } else {
       onError(body);
     }
