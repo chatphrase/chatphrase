@@ -143,7 +143,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
       // If there's no current offer
       } else if (status == 404) {
         // Create the offer
-        pc.createOffer(setLocalAndPost(location), onError, {
+        pc.createOffer(setLocalAndPost(endpoint), onError, {
           mandatory: {
             OfferToReceiveAudio: true,
             OfferToReceiveVideo: true },
