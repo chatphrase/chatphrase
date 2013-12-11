@@ -197,13 +197,21 @@ function chatphraseSignaling (slugPhrase, cbs) {
             poll, onError);
         // If we're waiting for ICE candidate updates
         } else {
-          // Add remote ICE candidate
+          // Advance the poll position to the next item
           ++pollPoint;
-          // TODO: Fix this to use callbacks once
-          // https://code.google.com/p/webrtc/issues/detail?id=2338
-          // is fixed (*shakes fist at Google*)
-          pc.addIceCandidate(new RTCIceCandidate(body));
-          return poll();
+          // If this is an ICE candidate and not the message saying that the
+          // candidates have finished
+          if (body) {
+            // Add the ICE candidate and continue polling for the next one
+
+            // TODO: Fix this to use callbacks once
+            // https://code.google.com/p/webrtc/issues/detail?id=2338
+            // is fixed (*shakes fist at Google*)
+            pc.addIceCandidate(new RTCIceCandidate(body));
+            return poll();
+          }
+          // If the message was "null", that's our cue to stop polling, we're
+          // not going to get any more messages.
         }
 
       // if the body is gone (not found, because we don't special-case them)
