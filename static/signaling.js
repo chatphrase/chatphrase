@@ -252,11 +252,11 @@ function chatphraseSignaling (slugPhrase, cbs) {
     return cbs.remoteStream && cbs.remoteStream(evt.stream);
   }
 
-  function onIceCandidate(candidate) {
+  function onIceCandidate(evt) {
     //if the server is ready to receive our updates
     if (signalPath) {
       // Update our session description with the new ICE candidates
-      xhrPostJson(signalPath+'?side=up', candidate,
+      xhrPostJson(signalPath+'?side=up', evt.candidate,
         function (status,body) {
           if (!status) {
             onError(body);
