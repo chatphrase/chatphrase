@@ -111,7 +111,7 @@ function beginPhrase(phrase) {
   }
 
   // Inform the user what they need to do
-  setMessage("Chatphrase will begin connecting once you grant permission "
+  setMessage("Chatphrase will begin connecting once it is granted access "
     + "to use your camera and microphone...");
 
   // Enter the room state
