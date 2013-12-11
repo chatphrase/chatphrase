@@ -199,7 +199,11 @@ function chatphraseSignaling (slugPhrase, cbs) {
         } else {
           // Add remote ICE candidate
           ++pollPoint;
-          return pc.addIceCandidate(new RTCIceCandidate(body), poll, onError);
+          // TODO: Fix this to use callbacks once
+          // https://code.google.com/p/webrtc/issues/detail?id=2338
+          // is fixed (*shakes fist at Google*)
+          pc.addIceCandidate(new RTCIceCandidate(body));
+          return poll();
         }
 
       // if the body is gone (not found, because we don't special-case them)
