@@ -20,7 +20,7 @@
     "jade": "~0.34.1",
     "envigor": "~0.4.2",
     "nowww": "~1.1.2",
-    "caress": "~0.1.0"
+    "caress": "chatphrase/caress#v0.2.1"
   },
   "engines": {
     "node": "0.10.17"
