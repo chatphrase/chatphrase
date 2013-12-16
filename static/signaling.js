@@ -84,6 +84,11 @@ function chatphraseSignaling (slugPhrase, cbs) {
   var pc;
   // The path we GET to listen on / POST updates to.
   var signalPath;
+  // Queued ICE candidates to send.
+  var localIceQueue = [];
+  // Whether we're currently draining the ICE queue
+  // (for concurrency control purposes).
+  var drainingIceQueue = false;
   // The index of the current message we're asking for.
   var pollPoint = 0;
   // The local stream, for restarting.
@@ -92,10 +97,15 @@ function chatphraseSignaling (slugPhrase, cbs) {
   //stream: the stream object from getUserMedia.
   iface.start = function start(stream) {
 
+    // TODO: destroy existing PeerConnection, if any
+
     if (stream) localStream = stream;
 
-    // Re-initialize our outside state variables
+    // Reinitialize our outside state variables
     signalPath = undefined;
+    pollPoint = 0;
+    localIceQueue.length = 0;
+    drainingIceQueue = false;
 
     pc = new RTCPeerConnection({
       "iceServers": chatphraseIceServers},
@@ -247,6 +257,14 @@ function chatphraseSignaling (slugPhrase, cbs) {
     if (status == 201) {
       // Export the path we've just been given for POSTing updates to
       signalPath = location;
+
+      // Unless we've somehow already started sending our queued candidates
+      // before this point (if that's even possible)
+      if (!drainingIceQueue) {
+        // POST any updates we've queued up
+        drainIceQueue();
+      }
+
       // Start polling
       return poll();
 
@@ -274,20 +292,49 @@ function chatphraseSignaling (slugPhrase, cbs) {
     return cbs.remoteStream && cbs.remoteStream(evt.stream);
   }
 
-  function onIceCandidate(evt) {
-    //if the server is ready to receive our updates
-    if (signalPath) {
-      // Update our session description with the new ICE candidates
-      xhrPostJson(signalPath+'?side=up', evt.candidate,
+  function drainIceQueue() {
+    if (localIceQueue.length > 0) {
+      drainingIceQueue = true;
+      return xhrPostJson(signalPath + '?side=up', localIceQueue.shift(),
         function (status,body) {
-          if (!status) {
-            onError(body);
+          if (status == 200 || status == 201) {
+            return drainIceQueue();
+          } else if (!status) {
+            return onError(body);
+
           } else if (status >= 500) {
-            onError(new Error(
+            return onError(new Error(
+              'Got status ' + status + ' updating SDP: ' + body));
+
+          } else if (status >= 400) {
+            // All the 400s mean we've basically somehow timed out
+            return cbs.remoteSignalLost && cbs.remoteSignalLost();
+
+          // We have no idea how to handle 1xx or 3xx codes
+          } else {
+            return onError(new Error(
               'Got status ' + status + ' updating SDP: ' + body));
           }
         });
+    } else {
+      drainingIceQueue = false;
+      return;
     }
+  }
+
+  function sendIceCandidate(candidate) {
+    // Add this to the current list of candidates to push
+    localIceQueue.push(candidate);
+
+    // If we're ready and not currently sending candidates
+    if (signalPath && !drainingIceQueue) {
+      // Start sending candidates
+      return drainIceQueue();
+    }
+  }
+
+  function onIceCandidate(evt) {
+    return sendIceCandidate(evt.candidate);
   }
 
   return iface;
