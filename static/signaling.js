@@ -209,9 +209,19 @@ function chatphraseSignaling (slugPhrase, cbs) {
             // is fixed (*shakes fist at Google*)
             pc.addIceCandidate(new RTCIceCandidate(body));
             return poll();
-          }
+
           // If the message was "null", that's our cue to stop polling, we're
           // not going to get any more messages.
+          } else {
+
+            // Nonetheless, we're going to keep polling for now, because our
+            // GET calls are the heartbeats that refresh the TTL on our OWN
+            // POST endpoint due to the way caress is currently configured.
+            // This could be fixed to be less dysfunctional down the line:
+            // it'll probably happen after caress is updated to use Lua scripts
+            // for transactions.
+            return poll();
+          }
         }
 
       // if the body is gone (not found, because we don't special-case them)
