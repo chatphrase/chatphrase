@@ -51,6 +51,7 @@ var signal;
 var connected;
 var sigHooks = {
   error: function (err) {
+    document.getElementById('vidscreen').hidden = true;
     setMessage('ERROR: ' + err.message);
     console.error(err);
   },
@@ -88,7 +89,7 @@ function beginPhrase(phrase) {
     attachMediaStream(document.getElementById('pip'),stream);
 
     // Begin connecting / waiting
-    setMessage("Creating connection...");
+    setMessage("Connecting to Chatphrase...");
     signal.start(stream);
   }
 
