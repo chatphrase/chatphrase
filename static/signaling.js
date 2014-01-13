@@ -198,6 +198,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
         var body;
         try {
           body = JSON.parse(rq.responseText);
+          ++pollPoint;
           pc.setRemoteDescription(new RTCSessionDescription(body),
             next, onError);
         } catch(e) {
