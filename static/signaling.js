@@ -296,7 +296,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function drainIceQueue() {
     if (localIceQueue.length > 0) {
       drainingIceQueue = true;
-      return xhrPostJson(signalPath + '?side=up', localIceQueue.shift(),
+      return xhrPostJson(signalPath, localIceQueue.shift(), {},
         function (status,body) {
           if (status == 200 || status == 201) {
             return drainIceQueue();
