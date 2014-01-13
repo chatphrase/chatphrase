@@ -209,22 +209,18 @@ function chatphraseSignaling (slugPhrase, cbs) {
     });
   }
 
-  function answerOffer(location) {
-    return function(){
-      pc.createAnswer(setLocalAndPost(location), onError, {
-        mandatory: {},
-        optional: []});
-    };
+  function answerOffer() {
+    return pc.createAnswer(setLocalAndPost, onError, {
+      mandatory: {},
+      optional: []});
   }
 
-  function setLocalAndPost(location) {
-    return function(desc) {
-      pc.setLocalDescription(desc,
-        xhrPostJson.bind(null, location, desc, {}, function(rq, err) {
-          if (rq && rq.status == 200) pollForIce();
-          else handleMessageError(rq, err, "posting answer");
-        }), onError);
-    };
+  function setLocalAndPost(desc) {
+    return pc.setLocalDescription(desc,
+      xhrPostJson.bind(null, signalPath, desc, {}, function(rq, err) {
+        if (rq && rq.status == 200) pollForIce();
+        else handleMessageError(rq, err, "posting answer");
+      }), onError);
   }
 
   function pollForIce() {
