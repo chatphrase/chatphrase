@@ -15,8 +15,8 @@ var chatphraseIceServers = [
   }
 ];
 
-// The base of the URLs to check the initial offers from.
-var chatphraseOffersBase = "/signal/offers/";
+// The base of the URLs to post the initial offers to.
+var chatphraseOffersBase = "/signal/start/";
 
 //phrase: the slugified phrase to connect to.
 //cbs: The callbacks to send to the UI/system on various events/hooks.
@@ -26,13 +26,12 @@ function chatphraseSignaling (slugPhrase, cbs) {
     on: cbs
   };
 
-  function xhrPostJson(url, body, cb, opts) {
+  function xhrPostJson(url, body, opts, cb) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
-        return cb(rq.status, rq.responseText,
-          rq.getResponseHeader('Location'));
+        return cb(rq);
       }
     };
     rq.onerror = function(e){cb(null,e)};
@@ -41,31 +40,18 @@ function chatphraseSignaling (slugPhrase, cbs) {
       rq.timeout = opts.timeout;
       rq.ontimeout = opts.ontimeout;
     }
-    // NOTE: the type is text/json and not application/json because I'm
-    // too lazy and paranoid to do things right on the server.
-    // (It's currently only designed to parse the body when it's a
-    // text/ type... eek.)
-    // This should be fixed at some point down the line, for instance,
-    // once caress is updated with Content-Type saving.
-    rq.setRequestHeader("Content-Type", "text/json; charset=utf-8");
+    rq.setRequestHeader("Content-Type", "application/json; charset=utf-8");
     rq.send(JSON.stringify(body));
   }
 
-  function xhrGetJson(url, cb, opts) {
+  function xhrGet(url, opts, cb) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
     function handleEnd() {
     }
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
-        var body;
-        try {
-          body = JSON.parse(rq.responseText);
-        } catch(e) {
-          body = rq.responseText;
-        }
-        return cb(rq.status, body,
-          rq.getResponseHeader('Location'), rq.getResponseHeader('Etag'));
+        return cb(rq);
       }
     };
     rq.onerror = function(e){cb(null,e)};
@@ -130,39 +116,97 @@ function chatphraseSignaling (slugPhrase, cbs) {
     // Add our ICE listener
     pc.onicecandidate = onIceCandidate;
 
-    getOffer();
+    startConnection();
   };
 
-  function getOffer() {
+  function startConnection() {
     var endpoint = chatphraseOffersBase + slugPhrase;
 
-    xhrGetJson(endpoint, beginConnection);
+    pc.createOffer(postOffer(endpoint), onError, {
+      mandatory: {
+        OfferToReceiveAudio: true,
+        OfferToReceiveVideo: true },
+      optional: []});
+  }
 
-    function beginConnection(status,body,location) {
-      if (status == 200) {
+  function postOffer(endpoint) {
+    return function(offer) {
+      xhrPostJson(endpoint, offer, {}, handlePostResponse);
 
-        // mark that we've got the initial content, and will want to start
-        // asking for ICE messages
-        ++pollPoint;
+      function handlePostResponse(rq, err) {
+        // If we're first
+        if (rq && rq.status == 202) {
+          // keep polling until we get a first offer
+          getRemoteDescription(rq.getResponseHeader('Location'), answerOffer);
 
-        // Set the remote offer and move on to answer it back
-        pc.setRemoteDescription(new RTCSessionDescription(body),
-          answerOffer(location), onError);
-      // If there's no current offer
-      } else if (status == 404) {
-        // Create the offer
-        pc.createOffer(setLocalAndPost(endpoint), onError, {
-          mandatory: {
-            OfferToReceiveAudio: true,
-            OfferToReceiveVideo: true },
-          optional: []});
-      } else if(status) {
-        onError(new Error(
-          "Got status "+status+" from "+endpoint+": "+body));
-      } else {
-        onError(body);
+        // If our offer was created for somebody waiting on it
+        } else if (rq && rq.status == 201) {
+          // Start using our offer and poll for an answer
+          pc.setLocalDescription(offer,
+            getRemoteDescription.bind(null,
+              rq.getResponseHeader('Location'), pollForIce),
+            onError);
+
+        } else handleRqError(rq, err, "posting offer");
       }
+    };
+  }
+
+  function handleRqError(rq, err, action) {
+    // If the request came back with an unexpected status
+    if (rq && rq.status) {
+      // report it as an error
+      return onError(new Error (
+        "Got status " + rq.status + " " + (action || "from a request")
+        + ": " + rq.responseText));
+
+    // if there was an error in the XHR (no rq or status)
+    } else {
+      // report it
+      return onError(err);
     }
+  }
+
+  function handleMessageError(rq, err, action) {
+    // if the body is gone (not found, because we don't special-case them)
+    if (rq && rq.status == 404) {
+      // fire the event for that
+      return cbs.remoteSignalLost && cbs.remoteSignalLost();
+
+    // if there was some unexpected status
+    } else handleRqError(rq, err, action);
+  }
+
+  function getLoop(getF, cb) {
+    function checkBody(rq, err) {
+      // if a new body isn't yet present, loop
+      if (rq && (rq.status == 204 || rq.status == 304)) getF(checkBody);
+      else cb(rq, err);
+    }
+    getF(checkBody);
+  }
+
+  function getRemoteDescription(location, next) {
+    // Export the path we've just been given for polling on
+    // and POSTing updates to
+    signalPath = location;
+
+    getLoop(xhrGet.bind(null,location + '/' + pollPoint, {}),
+      function(rq, err) {
+
+      if (rq && rq.status == 200) {
+        var body;
+        try {
+          body = JSON.parse(rq.responseText);
+          pc.setRemoteDescription(new RTCSessionDescription(body),
+            next, onError);
+        } catch(e) {
+          onError(e);
+        }
+      } else {
+        handleMessageError(rq, err, "polling for remote description");
+      }
+    });
   }
 
   function answerOffer(location) {
@@ -175,113 +219,70 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
   function setLocalAndPost(location) {
     return function(desc) {
-      pc.setLocalDescription(desc, function(){
-        xhrPostJson(location, desc, continueFromPost, onError);
-      }, onError);
+      pc.setLocalDescription(desc,
+        xhrPostJson.bind(null, location, desc, {}, function(rq, err) {
+          if (rq && rq.status == 200) pollForIce();
+          else handleMessageError(rq, err, "posting answer");
+        }), onError);
     };
   }
 
-  function continueFromPost(status, body, location) {
-
-    function poll() {
-      // continue polling
-      xhrGetJson(location + '/' + pollPoint + '?side=down', respondToPoll);
+  function pollForIce() {
+    // Unless we've somehow already started sending our queued candidates
+    // before this point (if that's even possible)
+    if (!drainingIceQueue) {
+      // POST any updates we've queued up
+      // I'm pretty sure we'll never have any as we're only going to get
+      // ICE candidates once we've set our local description, and we only
+      // do that in response to a signaling endpoint now, but just in case...
+      drainIceQueue();
     }
+
+    function poll(cb) {
+      // continue polling
+      xhrGet(location + '/' + pollPoint, {}, cb);
+    }
+
+    getLoop(poll, respondToPoll);
 
     // Ignore the "nulLocation" parameter, we never expect to get it.
-    function respondToPoll(status, body, nulLocation, etag) {
+    function respondToPoll(rq, err) {
 
-      //if there's no change or no body yet
-      if (status == 204 || status == 304) {
-        //continue polling
-        poll();
+      if (rq && rq.status == 200) {
+        // Advance the poll position to the next item
+        ++pollPoint;
 
-      // if there's a new body
-      } else if (status == 200) {
-        // If we've been awaiting the initial remote description
-        if (pollPoint == 0) {
-          // update our peerconnection with the new remote description,
-          // then continue polling
-          ++pollPoint;
-          return pc.setRemoteDescription(new RTCSessionDescription(body),
-            poll, onError);
-        // If we're waiting for ICE candidate updates
-        } else {
-          // Advance the poll position to the next item
-          ++pollPoint;
-          // If this is an ICE candidate and not the message saying that the
-          // candidates have finished
-          if (body) {
-            // Add the ICE candidate and continue polling for the next one
-
-            // TODO: Fix this to use callbacks once
-            // https://code.google.com/p/webrtc/issues/detail?id=2338
-            // is fixed (*shakes fist at Google*)
-            pc.addIceCandidate(new RTCIceCandidate(body));
-            return poll();
-
-          // If the message was "null", that's our cue to stop polling, we're
-          // not going to get any more messages.
-          } else {
-
-            // Nonetheless, we're going to keep polling for now, because our
-            // GET calls are the heartbeats that refresh the TTL on our OWN
-            // POST endpoint due to the way caress is currently configured.
-            // This could be fixed to be less dysfunctional down the line:
-            // it'll probably happen after caress is updated to use Lua scripts
-            // for transactions.
-            return poll();
-          }
+        var body;
+        try {
+          body = JSON.parse(rq.responseText);
+        } catch(e) {
+          onError(e);
         }
 
-      // if the body is gone (not found, because we don't special-case them)
-      } else if (status == 404) {
-        // fire the event for that
-        return cbs.remoteSignalLost && cbs.remoteSignalLost();
+        // If this is an ICE candidate and not the message saying that the
+        // candidates have finished
+        if (body) {
+          // Add the ICE candidate and continue polling for the next one
 
-      // if there was some unexpected status
-      } else if (status) {
-        // report it as an error
-        return onError(new Error (
-          "Got status " + status + " while polling " + location
-            + ": " + body));
+          // TODO: Fix this to use callbacks once
+          // https://code.google.com/p/webrtc/issues/detail?id=2338
+          // is fixed (*shakes fist at Google*)
+          pc.addIceCandidate(new RTCIceCandidate(body));
+          return getLoop(poll, respondToPoll);
 
-      // if there was an error in the XHR (no status)
+        // If the message was "null", that's our cue to stop polling, we're
+        // not going to get any more messages.
+        } else {
+
+          // Nonetheless, we're going to keep polling for now, in case we have
+          // more ICE candidates to send ourself, or we want to get another
+          // message (of course, there's no telling how we'd handle it...)
+          return getLoop(poll, respondToPoll);
+        }
       } else {
-        // report it
-        return onError(body);
+        handleMessageError(rq, err, "polling for ICE candidates");
       }
     }
-
-    // If the signal endpoint was created
-    if (status == 201) {
-      // Export the path we've just been given for POSTing updates to
-      signalPath = location;
-
-      // Unless we've somehow already started sending our queued candidates
-      // before this point (if that's even possible)
-      if (!drainingIceQueue) {
-        // POST any updates we've queued up
-        drainIceQueue();
-      }
-
-      // Start polling
-      return poll();
-
-    // If we're colliding or the endpoint is missing
-    // (the endpoint goes missing when someone else answers an offer first)
-    } else if (status == 303 || status == 404) {
-      // Re-get the offer
-      return getOffer();
-
-    } else if (status) {
-      return onError(new Error (
-        "Got status " + status + " posting session: " + body));
-
-    } else {
-      return onError(body);
-    }
-
   }
 
   function onError(err) {
