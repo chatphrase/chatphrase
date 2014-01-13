@@ -297,25 +297,10 @@ function chatphraseSignaling (slugPhrase, cbs) {
     if (localIceQueue.length > 0) {
       drainingIceQueue = true;
       return xhrPostJson(signalPath, localIceQueue.shift(), {},
-        function (status,body) {
-          if (status == 200 || status == 201) {
+        function (rq, err) {
+          if (rq && rq.status == 200) {
             return drainIceQueue();
-          } else if (!status) {
-            return onError(body);
-
-          } else if (status >= 500) {
-            return onError(new Error(
-              'Got status ' + status + ' updating SDP: ' + body));
-
-          } else if (status >= 400) {
-            // All the 400s mean we've basically somehow timed out
-            return cbs.remoteSignalLost && cbs.remoteSignalLost();
-
-          // We have no idea how to handle 1xx or 3xx codes
-          } else {
-            return onError(new Error(
-              'Got status ' + status + ' updating SDP: ' + body));
-          }
+          } else handleMessageError(rq, err, "posting ICE candidate");
         });
     } else {
       drainingIceQueue = false;
