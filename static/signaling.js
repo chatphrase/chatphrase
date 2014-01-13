@@ -186,12 +186,12 @@ function chatphraseSignaling (slugPhrase, cbs) {
     getF(checkBody);
   }
 
-  function getRemoteDescription(location, next) {
+  function getRemoteDescription(path, next) {
     // Export the path we've just been given for polling on
     // and POSTing updates to
-    signalPath = location;
+    signalPath = path;
 
-    getLoop(xhrGet.bind(null,location + '/' + pollPoint, {}),
+    getLoop(xhrGet.bind(null, signalPath + '/' + pollPoint, {}),
       function(rq, err) {
 
       if (rq && rq.status == 200) {
@@ -228,20 +228,16 @@ function chatphraseSignaling (slugPhrase, cbs) {
     // before this point (if that's even possible)
     if (!drainingIceQueue) {
       // POST any updates we've queued up
-      // I'm pretty sure we'll never have any as we're only going to get
-      // ICE candidates once we've set our local description, and we only
-      // do that in response to a signaling endpoint now, but just in case...
       drainIceQueue();
     }
 
     function poll(cb) {
       // continue polling
-      xhrGet(location + '/' + pollPoint, {}, cb);
+      xhrGet(signalPath + '/' + pollPoint, {}, cb);
     }
 
     getLoop(poll, respondToPoll);
 
-    // Ignore the "nulLocation" parameter, we never expect to get it.
     function respondToPoll(rq, err) {
 
       if (rq && rq.status == 200) {
