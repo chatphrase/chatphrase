@@ -63,11 +63,18 @@ var sigHooks = {
     // both ends are truly connected
     connected = stream;
   },
+  waiting: function setWaitingMessage() {
+    setMessage("Waiting for other end to connect...");
+  },
+  connecting: function setConnectingMessage() {
+    setMessage("Connecting to other end...");
+  },
   remoteSignalLost: function restartIfNotConnected() {
     // If we never received the remote stream
     if (!connected) {
       // Restart signaling
       // TODO: revert message state
+      setMessage("Reconnecting to Chatphrase...");
       signal.start();
     }
   }
@@ -78,7 +85,7 @@ function beginPhrase(phrase) {
   signal = chatphraseSignaling(phrase,sigHooks);
 
   // Update the window title
-  document.title = phrase.replace(/-/g,' ') + ' : Chatphrase';
+  document.title = phrase.replace(/-/g, ' ') + ' : Chatphrase';
 
   // Attempt to acquire the user's camera
   getUserMedia({audio:true,video:true},
@@ -86,7 +93,7 @@ function beginPhrase(phrase) {
 
   function gumSuccess(stream) {
     // Display the local video feed in a picture-in-picture element
-    attachMediaStream(document.getElementById('pip'),stream);
+    attachMediaStream(document.getElementById('pip'), stream);
 
     // Begin connecting / waiting
     setMessage("Connecting to Chatphrase...");

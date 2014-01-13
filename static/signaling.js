@@ -136,12 +136,14 @@ function chatphraseSignaling (slugPhrase, cbs) {
       function handlePostResponse(rq, err) {
         // If we're first
         if (rq && rq.status == 202) {
+          cbs.waiting && cbs.waiting();
           // keep polling until we get a first offer
           getRemoteDescription(rq.getResponseHeader('Location'), answerOffer);
 
         // If our offer was created for somebody waiting on it
         } else if (rq && rq.status == 201) {
           // Start using our offer and poll for an answer
+          cbs.connecting && cbs.connecting();
           pc.setLocalDescription(offer,
             getRemoteDescription.bind(null,
               rq.getResponseHeader('Location'), pollForIce),
@@ -211,6 +213,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
   }
 
   function answerOffer() {
+    cbs.connecting && cbs.connecting();
     return pc.createAnswer(setLocalAndPost, onError, {
       mandatory: {},
       optional: []});
