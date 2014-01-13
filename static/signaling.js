@@ -72,9 +72,9 @@ function chatphraseSignaling (slugPhrase, cbs) {
   var signalPath;
   // Queued ICE candidates to send.
   var localIceQueue = [];
-  // Whether we're currently draining the ICE queue
-  // (for concurrency control purposes).
-  var drainingIceQueue = false;
+  // Whether the ICE queue is drainable (for concurrency control purposes, and
+  // to stop the queue from draining before the local description is sent).
+  var iceQueueDrainable = false;
   // The index of the current message we're asking for.
   var pollPoint = 0;
   // The local stream, for restarting.
@@ -91,7 +91,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
     signalPath = undefined;
     pollPoint = 0;
     localIceQueue.length = 0;
-    drainingIceQueue = false;
+    iceQueueDrainable = false;
 
     pc = new RTCPeerConnection({
       "iceServers": chatphraseIceServers},
@@ -225,12 +225,8 @@ function chatphraseSignaling (slugPhrase, cbs) {
   }
 
   function pollForIce() {
-    // Unless we've somehow already started sending our queued candidates
-    // before this point (if that's even possible)
-    if (!drainingIceQueue) {
-      // POST any updates we've queued up
-      drainIceQueue();
-    }
+    // POST any ICE candidates we've queued up
+    drainIceQueue();
 
     function poll(cb) {
       // continue polling
@@ -288,7 +284,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
   function drainIceQueue() {
     if (localIceQueue.length > 0) {
-      drainingIceQueue = true;
+      iceQueueDrainable = false;
       return xhrPostJson(signalPath, localIceQueue.shift(), {},
         function (rq, err) {
           if (rq && rq.status == 200) {
@@ -296,7 +292,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
           } else handleMessageError(rq, err, "posting ICE candidate");
         });
     } else {
-      drainingIceQueue = false;
+      iceQueueDrainable = true;
       return;
     }
   }
@@ -306,7 +302,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
     localIceQueue.push(candidate);
 
     // If we're ready and not currently sending candidates
-    if (signalPath && !drainingIceQueue) {
+    if (signalPath && iceQueueDrainable) {
       // Start sending candidates
       return drainIceQueue();
     }
