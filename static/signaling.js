@@ -115,6 +115,9 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
     // Add our ICE listener
     pc.onicecandidate = onIceCandidate;
+    
+    // Listen for ICE connection state change events
+    pc.oniceconnectionstatechange = onIceConnectionStateChange;
 
     startConnection();
   };
@@ -284,7 +287,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function onAddStream(evt) {
     return cbs.remoteStream && cbs.remoteStream(evt.stream);
   }
-  
+
   function onIceConnectionStateChange(evt) {
     if (pc.iceConnectionState == "connected") {
       return cbs.connected && cbs.connected(evt);
