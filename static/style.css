@@ -26,3 +26,8 @@ a {
 p {
   font-size: 20px;
 }
+
+/* http://crbug.com/177627 and probably some other browsers */
+[hidden] {
+  display: none !important;
+}
