@@ -29,6 +29,10 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function xhrPostJson(url, body, opts, cb) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
+
+    // tell the browser not to bother parsing, regardless of Content-Type
+    rq.responseType = "text";
+
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
         return cb(rq);
@@ -47,8 +51,10 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function xhrGet(url, opts, cb) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
-    function handleEnd() {
-    }
+    
+    // tell the browser not to bother parsing, regardless of Content-Type
+    rq.responseType = "text";
+
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
         return cb(rq);
@@ -115,7 +121,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
 
     // Add our ICE listener
     pc.onicecandidate = onIceCandidate;
-    
+
     // Listen for ICE connection state change events
     pc.oniceconnectionstatechange = onIceConnectionStateChange;
 
