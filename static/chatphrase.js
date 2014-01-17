@@ -57,20 +57,12 @@ function setErrorMessage(text, err) {
 }
 
 function barkOnConnectionTimeout() {
-  var msgEl = document.getElementById('message');
-  while (msgEl.firstChild) {
-    msgEl.removeChild(msgEl.firstChild);
-  }
-  var h2 = document.createElement('h2');
-  h2.textContent = "Hmm, it shouldn't be taking this long.";
-  msgEl.appendChild(h2);
-  var reportMe = document.createElement('p');
-  reportMe.innerHTML = "You're probably encountering a browser bug that's " +
-    'keeping the connection from working. Go to ' +
+  setMessageHTML("<h2>Hmm, it shouldn't be taking this long.</h2>"+
+     "<p>You're probably encountering a browser bug that's " +
+    'keeping the connection from working.</p><p>Go to ' +
     '<a href="https://github.com/chatphrase/chatphrase/wiki/Connection-failures" target="_blank">' +
     "https://github.com/chatphrase/chatphrase/wiki/Connection-failures</a> " +
-    "and let's see what we can do about fixing this.";
-  msgEl.appendChild(reportMe);
+    "and let's see what we can do about fixing this.</p>");
   document.getElementById('message').hidden = false;
   document.getElementById('vidscreen').hidden = true;
 }
