@@ -56,7 +56,7 @@ function setErrorMessage(text, err) {
   console.error(err);
 }
 
-function setErrorMessage() {
+function barkOnConnectionTimeout() {
   var msgEl = document.getElementById('message');
   while (msgEl.firstChild) {
     msgEl.removeChild(msgEl.firstChild);
@@ -84,6 +84,7 @@ function switchState(stateId) {
 }
 
 var signal;
+var connectingWatchdog;
 var connected;
 var sigHooks = {
   error: function (err) {
@@ -92,7 +93,7 @@ var sigHooks = {
     document.getElementById('pip').hidden = true;
     document.getElementById('vidscreen').hidden = true;
   },
-  remoteStream: function onRemoteStream(stream){
+  remoteStream: function onRemoteStream(stream) {
     attachMediaStream(document.getElementById('vidscreen'),stream);
   },
   waiting: function setWaitingMessage() {
@@ -100,8 +101,10 @@ var sigHooks = {
   },
   connecting: function setConnectingMessage() {
     setMessage("Connecting to other end...");
+    connectingWatchdog = setTimeout(barkOnConnectionTimeout,5000);
   },
   connected: function setConnectingMessage() {
+    clearTimeout(connectingWatchdog);
     connected = true;
     setMessage("Connected");
     document.getElementById('message').hidden = true;
