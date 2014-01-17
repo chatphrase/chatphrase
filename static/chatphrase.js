@@ -33,41 +33,79 @@ function resetPageState() {
 function setMessage(text) {
   document.getElementById('message').textContent = text;
 }
+function setMessageHTML(html) {
+  document.getElementById('message').innerHTML = html;
+}
+function setErrorMessage(text, err) {
+  var msgEl = document.getElementById('message');
+  while (msgEl.firstChild) {
+    msgEl.removeChild(msgEl.firstChild);
+  }
+  var p = document.createElement('p');
+  p.textContent = text;
+  msgEl.appendChild(p);
+  var pre = document.createElement('pre');
+  p.textContent = err.message || JSON.stringify(err);
+  msgEl.appendChild(pre);
+  var reportMe = document.createElement('p');
+  reportMe.innerHTML = 'Try refreshing the page. ' +
+    'If you keep getting this error, please report it at ' +
+    '<a href="https://github.com/chatphrase/chatphrase/issues" target="_blank">' +
+    'https://github.com/chatphrase/chatphrase/issues</a>.';
+  msgEl.appendChild(reportMe);
+  console.error(err);
+}
+
+function setErrorMessage() {
+  var msgEl = document.getElementById('message');
+  while (msgEl.firstChild) {
+    msgEl.removeChild(msgEl.firstChild);
+  }
+  var h2 = document.createElement('h2');
+  h2.textContent = "Hmm, it shouldn't be taking this long.";
+  msgEl.appendChild(h2);
+  var reportMe = document.createElement('p');
+  reportMe.innerHTML = "You're probably encountering a browser bug that's " +
+    'keeping the connection from working. Go to ' +
+    '<a href="https://github.com/chatphrase/chatphrase/wiki/Connection-failures" target="_blank">' +
+    "https://github.com/chatphrase/chatphrase/wiki/Connection-failures</a> " +
+    "and let's see what we can do about fixing this.";
+  msgEl.appendChild(reportMe);
+  document.getElementById('message').hidden = false;
+  document.getElementById('vidscreen').hidden = true;
+}
 
 // Switch which "page" element is currently visible.
-function switchState(stateName) {
-  var states = document.querySelectorAll(".page.active");
+function switchState(stateId) {
+  var states = document.getElementsByClassName("page");
   for (var i = 0; i < states.length; i++) {
-    states[i].classList.remove('active');
-    states[i].classList.add('inactive');
+    states[i].hidden = !(states[i].id == stateId);
   }
-
-  var newactive = document.getElementById(stateName);
-  newactive.classList.remove('inactive');
-  newactive.classList.add('active');
 }
 
 var signal;
 var connected;
 var sigHooks = {
   error: function (err) {
+    setErrorMessage('Signaling error:',err);
+    document.getElementById('message').hidden = false;
+    document.getElementById('pip').hidden = true;
     document.getElementById('vidscreen').hidden = true;
-    setMessage('ERROR: ' + err.message);
-    console.error(err);
   },
   remoteStream: function onRemoteStream(stream){
-    setMessage("");
     attachMediaStream(document.getElementById('vidscreen'),stream);
-    // TODO: implement a proper way of checking the ICE Agent connection state
-    // especially since I think WebRTC implements a dummy / dud stream until
-    // both ends are truly connected
-    connected = stream;
   },
   waiting: function setWaitingMessage() {
     setMessage("Waiting for other end to connect...");
   },
   connecting: function setConnectingMessage() {
     setMessage("Connecting to other end...");
+  },
+  connected: function setConnectingMessage() {
+    connected = true;
+    setMessage("Connected");
+    document.getElementById('message').hidden = true;
+    document.getElementById('vidscreen').hidden = false;
   },
   remoteSignalLost: function restartIfNotConnected() {
     // If we never received the remote stream
@@ -95,6 +133,8 @@ function beginPhrase(phrase) {
     // Display the local video feed in a picture-in-picture element
     attachMediaStream(document.getElementById('pip'), stream);
 
+    document.getElementById('pip').hidden = false;
+
     // Begin connecting / waiting
     setMessage("Connecting to Chatphrase...");
     signal.start(stream);
@@ -104,17 +144,16 @@ function beginPhrase(phrase) {
     if(err.code && err.code == err.PERMISSION_DENIED
       || err.name == "PERMISSION_DENIED"
     ){
-      setMessage(
-        "Permission to use your camera and microphone has been denied. "+
-        "If you choose to deny permission, reset permissions for "+
-        "camera and microphone access on chatphrase.com. "+
-        "If you did not choose to deny permission, check that another "+
-        "program isn't using the camera and/or microphone. "+
-        "Once your camera and microphone are ready, refresh the "+
-        "page to retry the chat connection.");
+      setMessageHTML(
+        "<h2>Permission to use your camera and microphone has been denied.</h2>"+
+        "<p>If you did not choose to deny permission, check that another "+
+        "program isn't using the camera and/or microphone.</p>"+
+        "<p>If you <em>did</em> choose to deny permission, you'll need to "+
+        "allow camera and microphone access on chatphrase.com.</p>"+
+        "<p>Once your camera and microphone are ready, refresh the "+
+        "page to retry the chat connection.</p>");
     } else {
-      setMessage("Error trying to getUserMedia: " +
-        (typeof err == "string" ? err : JSON.stringify(err))) ;
+      setErrorMessage("Error trying to getUserMedia:", err);
     }
   }
 

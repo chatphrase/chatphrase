@@ -284,6 +284,17 @@ function chatphraseSignaling (slugPhrase, cbs) {
   function onAddStream(evt) {
     return cbs.remoteStream && cbs.remoteStream(evt.stream);
   }
+  
+  function onIceConnectionStateChange(evt) {
+    if (pc.iceConnectionState == "connected") {
+      return cbs.connected && cbs.connected(evt);
+    } else
+    if (pc.iceConnectionState == "failed") {
+      return cbs.failed && cbs.failed(evt);
+    } else if (pc.iceConnectionState == "disconnected") {
+      return cbs.connected && cbs.connected(evt);
+    }
+  }
 
   function drainIceQueue() {
     if (localIceQueue.length > 0) {

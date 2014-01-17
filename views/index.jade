@@ -7,15 +7,15 @@ append scripts
   script(src='/adapter.js')
 
 block body
-  #landing.page.active
+  #landing.page
     .centercell
       h1.sitename chatphrase <span class="betaspan">&nbsp;beta&nbsp;(<a href="https://github.com/stuartpb/chatphrase/wiki/README">README</a>)</span>
       form(onsubmit="goToPhrase(document.getElementById('phrase').value);return false;")
         input#phrase(type='text',pattern='.*[\\w\\-\\&\\%].*',required,autofocus)
         button#gobutton(type="submit") &#x2794;
-  #room.page.inactive
+  #room.page(hidden)
     #message
-    video(autoplay)#vidscreen
-    video(autoplay,muted)#pip
+    video(autoplay,hidden)#vidscreen
+    video(autoplay,hidden,muted)#pip
   script(src='/signaling.js')
   script(src='/chatphrase.js')
