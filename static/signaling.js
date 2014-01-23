@@ -30,9 +30,6 @@ function chatphraseSignaling (slugPhrase, cbs) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
 
-    // tell the browser not to bother parsing, regardless of Content-Type
-    rq.responseType = "text";
-
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
         return cb(rq);
@@ -45,15 +42,16 @@ function chatphraseSignaling (slugPhrase, cbs) {
       rq.ontimeout = opts.ontimeout;
     }
     rq.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+
+    // tell the browser not to bother parsing, regardless of Content-Type
+    rq.responseType = "text";
+
     rq.send(JSON.stringify(body));
   }
 
   function xhrGet(url, opts, cb) {
     opts = opts || {};
     var rq = new XMLHttpRequest();
-    
-    // tell the browser not to bother parsing, regardless of Content-Type
-    rq.responseType = "text";
 
     rq.onreadystatechange = function () {
       if (rq.readyState == 4) {
@@ -62,6 +60,7 @@ function chatphraseSignaling (slugPhrase, cbs) {
     };
     rq.onerror = function(e){cb(null,e)};
     rq.open("GET", url);
+
     if (opts.timeout) {
       rq.timeout = opts.timeout;
       rq.ontimeout = opts.ontimeout;
@@ -69,6 +68,10 @@ function chatphraseSignaling (slugPhrase, cbs) {
     if (opts.ourtag){
       rq.setRequestHeader("If-None-Match", opts.ourtag);
     }
+    
+    // tell the browser not to bother parsing, regardless of Content-Type
+    rq.responseType = "text";
+
     rq.send();
   }
 
