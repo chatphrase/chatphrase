@@ -136,9 +136,13 @@ function beginPhrase(phrase) {
   }
 
   function gumError(err) {
-    if(err.code && err.code == err.PERMISSION_DENIED
+    // If the error was that permission was denied
+    if (
+      err.name == "PermissionDeniedError" // per the mediacapture spec
+      // Other forms of this error from off-spec implementations:
       || err.name == "PERMISSION_DENIED"
-      || err == "PERMISSION_DENIED" // Firefox spits a string
+      || err.code && err.code == err.PERMISSION_DENIED
+      || err == "PERMISSION_DENIED" // Firefox 1/23.2014
     ){
       setMessageHTML(
         "<h2>Permission to use your camera and microphone has been denied.</h2>"+
