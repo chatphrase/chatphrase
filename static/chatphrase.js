@@ -138,6 +138,7 @@ function beginPhrase(phrase) {
   function gumError(err) {
     if(err.code && err.code == err.PERMISSION_DENIED
       || err.name == "PERMISSION_DENIED"
+      || err == "PERMISSION_DENIED" // Firefox spits a string
     ){
       setMessageHTML(
         "<h2>Permission to use your camera and microphone has been denied.</h2>"+
