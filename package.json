@@ -20,7 +20,7 @@
     "caress": "chatphrase/caress#v0.4.2",
     "envigor": "^0.8.2",
     "express": "^4.12.3",
-    "jade": "~0.34.1",
+    "jade": "^1.9.2",
     "nowww": "~1.1.2"
   },
   "engines": {
