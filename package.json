@@ -4,6 +4,7 @@
   "description": "Accountless video chat",
   "main": "app.js",
   "scripts": {
+    "start": "envigorate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,11 +17,11 @@
   "author": "Stuart P. Bentley",
   "license": "MIT",
   "dependencies": {
+    "caress": "chatphrase/caress#v0.4.2",
+    "envigor": "^0.8.2",
     "express": "~3.3.5",
     "jade": "~0.34.1",
-    "envigor": "~0.4.2",
-    "nowww": "~1.1.2",
-    "caress": "chatphrase/caress#v0.4.2"
+    "nowww": "~1.1.2"
   },
   "engines": {
     "node": "0.10.17"
