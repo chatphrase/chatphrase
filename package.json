@@ -19,7 +19,7 @@
   "dependencies": {
     "caress": "chatphrase/caress#v0.4.2",
     "envigor": "^0.8.2",
-    "express": "~3.3.5",
+    "express": "^4.12.3",
     "jade": "~0.34.1",
     "nowww": "~1.1.2"
   },
