@@ -7,13 +7,6 @@ body {
 
 /* Normalizations */
 
-input::-moz-focus-inner,
-button::-moz-focus-inner /*Remove button padding in FF*/
-{
-  border: 0;
-  padding: 0;
-}
-
 input /*Remove red shadow on invalid inputs*/
 {
   box-shadow: none;
