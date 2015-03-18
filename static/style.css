@@ -12,6 +12,10 @@ input /*Remove red shadow on invalid inputs*/
   box-shadow: none;
 }
 
+input, button {
+  font-family: sans-serif;
+}
+
 a {
   color: inherit;
 }
